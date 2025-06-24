@@ -1,0 +1,18 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta http-equiv='X-UA-Compatible' content='IE=edge' />
+    <link rel='stylesheet' href='src/mail/templates/otp.css' type='text/css' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  </head>
+  <body>
+    <div class='container'>
+      <h1>Hatly Confirmation Code</h1>
+      <p>Please use the following confirmation code to verify your deal:</p>
+      <p class='otp-code'>{{code}}</p>
+      <p>This code will expire in {{expiresIn}} minutes.</p>
+      <p>If you didn't request this code, you can ignore this email.</p>
+      <p>Thank you for using Hatly!</p>
+    </div>
+  </body>
+</html> 

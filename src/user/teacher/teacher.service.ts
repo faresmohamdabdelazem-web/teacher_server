@@ -1,0 +1,116 @@
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Teacher } from './teacher.entity';
+import { Student } from '../student/student.entity';
+import { CreateTeacherDto } from './create-teacher.dto';
+import { UUID } from 'typeorm/driver/mongodb/bson.typings';
+import { isUUID } from 'class-validator';
+import { Lesson } from '../../lesson/entities/lesson.entity';
+import { User } from '../../user/entities/user.entity';
+import { UserRole } from '../user.role.enum';
+
+@Injectable()
+export class TeacherService {
+  constructor(
+    @InjectRepository(Teacher)
+    private teacherRepository: Repository<Teacher>,
+    @InjectRepository(Student)
+    private studentRepository: Repository<Student>,
+    @InjectRepository(Lesson)
+    private lessonRepository: Repository<Lesson>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) { }
+
+  async create(createTeacherDto: CreateTeacherDto, user: User): Promise<Teacher> {
+    // Create a Teacher entity linked to the User
+    const teacher = this.teacherRepository.create({ id: user.userId, user });
+    return await this.teacherRepository.save(teacher);
+  }
+
+  async findAll(): Promise<{ teachers: User[] }> {
+    const teachers = await this.userRepository.find({
+      where: { role: UserRole.TEACHER },
+      relations: ['lessons', 'students'],
+    });
+    return { teachers };
+  }
+
+  async findOne(userId: string): Promise<Teacher> {
+    const teacher = await this.teacherRepository.findOne({
+      where: { id: userId },
+      relations: ['user', 'lessons'],
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('Teacher not found');
+    }
+
+    return teacher;
+  }
+
+  async update(userId: string, updateTeacherDto: Partial<CreateTeacherDto>): Promise<Teacher> {
+    const teacher = await this.findOne(userId);
+    // Only update fields that exist on Teacher entity
+    // (userId, user, etc.)
+    Object.assign(teacher, updateTeacherDto);
+    return await this.teacherRepository.save(teacher);
+  }
+
+  async remove(userId: string): Promise<void> {
+    const teacher = await this.findOne(userId);
+    await this.teacherRepository.remove(teacher);
+  }
+
+  async getTeacherStudents(userId: string): Promise<{ students: Student[] }> {
+    if (!isUUID(userId)) {
+      throw new BadRequestException('Invalid teacher ID');
+    }
+    const teacher = await this.teacherRepository.findOne({
+      where: { id: userId },
+      relations: ['students'],
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('Teacher not found');
+    }
+
+    const students = await this.studentRepository.find({
+      where: { teachers: { id: userId } },
+      relations: ['teachers'],
+    });
+    console.log(students);
+
+    return {
+      students,
+    };
+  }
+
+  async getTeacherLessons(userId: string): Promise<{ lessons: Lesson[] }> {
+    if (!isUUID(userId)) {
+      throw new BadRequestException('Invalid teacher ID');
+    }
+    const teacher = await this.teacherRepository.findOne({
+      where: { id: userId },
+      relations: ['students'],
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('Teacher not found');
+    }
+    const lessons = await this.lessonRepository.find({
+      where: { teacher: { id: userId } },
+      relations: ['teacher'],
+    });
+
+    return {
+      lessons,
+    };
+  }
+
+  async createWithUser(user: User) {
+    const teacher = this.teacherRepository.create({ id: user.userId, user });
+    return await this.teacherRepository.save(teacher);
+  }
+} 

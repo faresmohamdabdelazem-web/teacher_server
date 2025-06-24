@@ -1,0 +1,74 @@
+import { LessonService } from './lesson.service';
+import { CreateLessonDto } from './dto/create-lesson.dto';
+import { UnsubscribeLessonDto } from './dto/unsubscribe-lesson.dto';
+import { AddStudentToLessonDto } from './dto/add-student-to-lesson.dto';
+import { RemoveStudentFromLessonDto } from './dto/remove-student-from-lesson.dto';
+import { MarkAttendanceDto } from './dto/mark-attendance.dto';
+export declare class LessonController {
+    private readonly lessonService;
+    constructor(lessonService: LessonService);
+    create(createLessonDto: CreateLessonDto, user: any): Promise<{
+        lesson: import("./entities/lesson.entity").Lesson;
+        teacher: import("../user/teacher/teacher.entity").Teacher;
+    } | {
+        lesson: import("./entities/lesson.entity").Lesson;
+    }>;
+    findAll(): Promise<{
+        lessons: import("./entities/lesson.entity").Lesson[];
+    }>;
+    findBySubject(subject: string): Promise<{
+        lessons: import("./entities/lesson.entity").Lesson[];
+    }>;
+    getLessonsByTeacher(teacherId: string): Promise<{
+        lessons: import("./entities/lesson.entity").Lesson[];
+    }>;
+    getLessonsByDate(date: string): Promise<{
+        lessons: import("./entities/lesson.entity").Lesson[];
+    }>;
+    findOne(id: string): Promise<{
+        lesson: import("./entities/lesson.entity").Lesson;
+    }>;
+    getLessonStudents(id: string): Promise<{
+        students: import("../user/student/student.entity").Student[];
+    }>;
+    startAttendance(lessonId: string, user: any): Promise<{
+        lesson: import("./entities/lesson.entity").Lesson;
+    }>;
+    markAttendance(markAttendanceDto: MarkAttendanceDto, user: any): Promise<import("./entities/lesson-attendance.entity").LessonAttendance>;
+    getLessonAttendance(lessonId: string): Promise<{
+        attendance: import("./entities/lesson-attendance.entity").LessonAttendance[];
+    }>;
+    getStudentAttendanceHistory(studentId: string): Promise<{
+        attendanceHistory: import("./entities/lesson-attendance.entity").LessonAttendance[];
+    }>;
+    startLesson(lessonId: string, user: any): Promise<{
+        lesson: import("./entities/lesson.entity").Lesson;
+    }>;
+    completeLesson(lessonId: string, user: any): Promise<{
+        lesson: import("./entities/lesson.entity").Lesson;
+    }>;
+    reopenLesson(lessonId: string, user: any): Promise<{
+        lesson: import("./entities/lesson.entity").Lesson;
+    }>;
+    getUpcomingLessons(): Promise<{
+        lessons: import("./entities/lesson.entity").Lesson[];
+    }>;
+    getCompletedLessons(): Promise<{
+        lessons: import("./entities/lesson.entity").Lesson[];
+    }>;
+    update(id: string, updateLessonDto: Partial<CreateLessonDto>, user: any): Promise<import("./entities/lesson.entity").Lesson>;
+    remove(id: string, user: any): Promise<void>;
+    addStudentToLesson(addStudentDto: AddStudentToLessonDto, user: any): Promise<{
+        lesson: import("./entities/lesson.entity").Lesson;
+    }>;
+    removeStudentFromLesson(removeStudentDto: RemoveStudentFromLessonDto, user: any): Promise<{
+        lesson: import("./entities/lesson.entity").Lesson;
+    }>;
+    unsubscribeFromLesson(unsubscribeDto: UnsubscribeLessonDto): Promise<{
+        lesson: import("./entities/lesson.entity").Lesson;
+    }>;
+    getStudentSubscriptions(studentId: string): Promise<{
+        subscriptions: import("./entities/lesson.entity").Lesson[];
+    }>;
+    checkStudentSubscription(studentId: string, lessonId: string): Promise<boolean>;
+}

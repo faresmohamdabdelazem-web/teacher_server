@@ -1,0 +1,11 @@
+export declare const REFRESH_TTL = 604800000;
+export declare const OTP_TOKEN_EXPIRE: number;
+export declare const FORGET_PASS_AR = "./otp_ar";
+export declare const FORGET_PASS_EN = "./otp";
+export declare const ITEM_FOLDER_NAME = "itemsPhotos";
+export declare const TICKET_FOLDER_NAME = "tickets";
+export declare const PASSPORT_PHOTO_FILE = "users/passport";
+export declare const PROFILE_PHOTO_FILE = "users/profile";
+export declare const getRejectedDealNotificationMessage: (name: string) => string;
+export declare const ACCEPTED_DEAL_NOTIFICATION: (name: string) => string;
+export declare const getCanceledDealNotificationMessage: (name: string) => string;
