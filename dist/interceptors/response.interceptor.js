@@ -17,13 +17,6 @@ let ResponseInterceptor = class ResponseInterceptor {
                 return {
                     status: true,
                 };
-            if (data.refreshToken) {
-                res.cookie('refreshToken', data.refreshToken, {
-                    httpOnly: process.env.NODE_ENV == 'dev' ? false : true,
-                    secure: process.env.NODE_ENV == 'dev' ? false : true,
-                    maxAge: 7 * 24 * 60 * 60 * 1000,
-                });
-            }
             return {
                 ...data,
                 status: true,

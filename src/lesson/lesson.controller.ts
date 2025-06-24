@@ -192,7 +192,7 @@ export class LessonController {
   // Assistant-only endpoints for managing students in lessons
   @Post('add-student')
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.ASSISTANT)
+  @Roles(UserRole.ASSISTANT, UserRole.TEACHER)
   addStudentToLesson(
     @Body() addStudentDto: AddStudentToLessonDto,
     @GetSignedUser() user: any,
@@ -207,7 +207,7 @@ export class LessonController {
 
   @Post('remove-student')
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.ASSISTANT)
+  @Roles(UserRole.ASSISTANT, UserRole.TEACHER)
   removeStudentFromLesson(
     @Body() removeStudentDto: RemoveStudentFromLessonDto,
     @GetSignedUser() user: any,

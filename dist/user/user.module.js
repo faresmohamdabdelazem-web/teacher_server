@@ -15,7 +15,6 @@ const typeorm_1 = require("@nestjs/typeorm");
 const user_entity_1 = require("./entities/user.entity");
 const cloudinary_service_1 = require("../cloudinary/cloudinary.service");
 const user_repository_1 = require("./user.repository");
-const stripe_module_1 = require("../stripe/stripe.module");
 const teacher_entity_1 = require("./teacher/teacher.entity");
 const student_entity_1 = require("./student/student.entity");
 const assistant_entity_1 = require("./assistant/assistant.entity");
@@ -40,7 +39,6 @@ exports.UserModule = UserModule = __decorate([
                 lesson_entity_1.Lesson,
             ]),
             cloudinary_module_1.CloudinaryModule,
-            stripe_module_1.StripeModule,
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
         ],
         controllers: [

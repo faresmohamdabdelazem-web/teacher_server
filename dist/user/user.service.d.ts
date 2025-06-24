@@ -7,19 +7,16 @@ import { UserPayload } from './userPayload.type';
 import { FilterUsersDto } from './dto/filter-user.dto';
 import { UserRole } from './user.role.enum';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { StripeService } from 'src/stripe/stripe.service';
 import { TeacherService } from './teacher/teacher.service';
 import { AssistantService } from './assistant/assistant.service';
 export declare class UserService {
     private userRepository;
     private cloudinary;
-    private stripeService;
     private teacherService;
     private assistantService;
-    constructor(userRepository: Repository<User>, cloudinary: CloudinaryService, stripeService: StripeService, teacherService: TeacherService, assistantService: AssistantService);
+    constructor(userRepository: Repository<User>, cloudinary: CloudinaryService, teacherService: TeacherService, assistantService: AssistantService);
     create(createUserDto: CreateUserDto): Promise<User>;
     private base64ToBuffer;
-    private uploadPassportPhotoToStripe;
     findAll(paginatedRequestDto: FilterUsersDto): Promise<{
         users: User[];
         meta: {

@@ -11,32 +11,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationService = void 0;
 const common_1 = require("@nestjs/common");
-const firebase_provider_1 = require("../firebase/firebase.provider");
 let NotificationService = class NotificationService {
-    constructor(firebaseRepo) {
-        this.firebaseRepo = firebaseRepo;
-    }
-    async pushNotification(fcmToken, title, body, payload) {
-        try {
-            const notifyResponse = await this.firebaseRepo.message.send({
-                token: fcmToken,
-                notification: {
-                    title: title,
-                    body: body,
-                },
-                data: payload
-            });
-            common_1.Logger.log(`NOTIFICATION INFO ==> ${notifyResponse}`);
-            return notifyResponse;
-        }
-        catch (error) {
-            common_1.Logger.error('NOTIFICATION', error);
-        }
-    }
+    constructor() { }
 };
 exports.NotificationService = NotificationService;
 exports.NotificationService = NotificationService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [firebase_provider_1.FirebaseRepository])
+    __metadata("design:paramtypes", [])
 ], NotificationService);
 //# sourceMappingURL=notification.service.js.map

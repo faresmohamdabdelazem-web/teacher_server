@@ -184,14 +184,14 @@ export class LessonService {
   // Only assistants can add students to lessons
   async addStudentToLesson(lessonId: string, studentId: string, userId: string, userRole: string): Promise<{ lesson: Lesson }> {
     // Validate that only assistants can add students to lessons
-    if (userRole !== UserRole.ASSISTANT) {
-      throw new ForbiddenException('Only assistants can add students to lessons');
+    if (userRole !== UserRole.ASSISTANT && userRole !== UserRole.TEACHER) {
+      throw new ForbiddenException('Only assistants and teachers can add students to lessons');
     }
 
     // Check if user exists and has ASSISTANT role
     const user = await this.userService.findOneById(userId);
-    if (!user || user.role !== UserRole.ASSISTANT) {
-      throw new NotFoundException('Assistant not found');
+    if (!user || (user.role !== UserRole.ASSISTANT && user.role !== UserRole.TEACHER)) {
+      throw new NotFoundException('Assistant or teacher not found');
     }
 
     const lesson = await this.lessonRepository.findOne({
@@ -231,14 +231,14 @@ export class LessonService {
   // Only assistants can remove students from lessons
   async removeStudentFromLesson(lessonId: string, studentId: string, userId: string, userRole: string): Promise<{ lesson: Lesson }> {
     // Validate that only assistants can remove students from lessons
-    if (userRole !== UserRole.ASSISTANT) {
-      throw new ForbiddenException('Only assistants can remove students from lessons');
+    if (userRole !== UserRole.ASSISTANT && userRole !== UserRole.TEACHER) {
+      throw new ForbiddenException('Only assistants and teachers can remove students from lessons');
     }
 
     // Check if user exists and has ASSISTANT role
     const user = await this.userService.findOneById(userId);
-    if (!user || user.role !== UserRole.ASSISTANT) {
-      throw new NotFoundException('Assistant not found');
+    if (!user || (user.role !== UserRole.ASSISTANT && user.role !== UserRole.TEACHER)) {
+      throw new NotFoundException('Assistant or teacher not found');
     }
 
     const lesson = await this.lessonRepository.findOne({

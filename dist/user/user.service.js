@@ -22,16 +22,13 @@ const user_entity_1 = require("./entities/user.entity");
 const typeorm_2 = require("typeorm");
 const user_role_enum_1 = require("./user.role.enum");
 const helper_1 = require("../decorators/password/helper");
-const class_validator_1 = require("class-validator");
-const stripe_service_1 = require("../stripe/stripe.service");
 const class_transformer_1 = require("class-transformer");
 const teacher_service_1 = require("./teacher/teacher.service");
 const assistant_service_1 = require("./assistant/assistant.service");
 let UserService = class UserService {
-    constructor(userRepository, cloudinary, stripeService, teacherService, assistantService) {
+    constructor(userRepository, cloudinary, teacherService, assistantService) {
         this.userRepository = userRepository;
         this.cloudinary = cloudinary;
-        this.stripeService = stripeService;
         this.teacherService = teacherService;
         this.assistantService = assistantService;
     }
@@ -59,21 +56,6 @@ let UserService = class UserService {
     base64ToBuffer(base64String) {
         const base64Data = base64String.replace(/^data:image\/[a-z]+;base64,/, '');
         return Buffer.from(base64Data, 'base64');
-    }
-    async uploadPassportPhotoToStripe(stripeAccountId, passportPhotoUrl) {
-        try {
-            if (!(0, class_validator_1.isURL)(passportPhotoUrl)) {
-                const buffer = this.base64ToBuffer(passportPhotoUrl);
-                await this.stripeService.uploadPassportPhoto(stripeAccountId, buffer);
-                common_1.Logger.log(`Passport photo uploaded to Stripe for account ${stripeAccountId}`);
-            }
-            else {
-                common_1.Logger.log(`Skipping Stripe upload for URL-based passport photo: ${passportPhotoUrl}`);
-            }
-        }
-        catch (error) {
-            common_1.Logger.error(`Failed to upload passport photo to Stripe: ${error}`);
-        }
     }
     async findAll(paginatedRequestDto) {
         const { page, take, email, city, country, verify, role, dateOfBirth, phone, } = paginatedRequestDto;
@@ -250,7 +232,6 @@ exports.UserService = UserService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         cloudinary_service_1.CloudinaryService,
-        stripe_service_1.StripeService,
         teacher_service_1.TeacherService,
         assistant_service_1.AssistantService])
 ], UserService);

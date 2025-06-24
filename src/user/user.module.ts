@@ -6,7 +6,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { UserRepository } from './user.repository';
-import { StripeModule } from 'src/stripe/stripe.module';
 import { Teacher } from './teacher/teacher.entity';
 import { Student } from './student/student.entity';
 import { Assistant } from './assistant/assistant.entity';
@@ -28,7 +27,6 @@ import { AuthModule } from 'src/auth/auth.module';
       Lesson,
     ]),
     CloudinaryModule,
-    StripeModule,
     forwardRef(() => AuthModule),
   ],
   controllers: [

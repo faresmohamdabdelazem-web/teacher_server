@@ -150,12 +150,12 @@ let LessonService = class LessonService {
         return { lessons };
     }
     async addStudentToLesson(lessonId, studentId, userId, userRole) {
-        if (userRole !== user_role_enum_1.UserRole.ASSISTANT) {
-            throw new common_1.ForbiddenException('Only assistants can add students to lessons');
+        if (userRole !== user_role_enum_1.UserRole.ASSISTANT && userRole !== user_role_enum_1.UserRole.TEACHER) {
+            throw new common_1.ForbiddenException('Only assistants and teachers can add students to lessons');
         }
         const user = await this.userService.findOneById(userId);
-        if (!user || user.role !== user_role_enum_1.UserRole.ASSISTANT) {
-            throw new common_1.NotFoundException('Assistant not found');
+        if (!user || (user.role !== user_role_enum_1.UserRole.ASSISTANT && user.role !== user_role_enum_1.UserRole.TEACHER)) {
+            throw new common_1.NotFoundException('Assistant or teacher not found');
         }
         const lesson = await this.lessonRepository.findOne({
             where: { id: lessonId },
@@ -182,12 +182,12 @@ let LessonService = class LessonService {
         return await this.findOne(lessonId);
     }
     async removeStudentFromLesson(lessonId, studentId, userId, userRole) {
-        if (userRole !== user_role_enum_1.UserRole.ASSISTANT) {
-            throw new common_1.ForbiddenException('Only assistants can remove students from lessons');
+        if (userRole !== user_role_enum_1.UserRole.ASSISTANT && userRole !== user_role_enum_1.UserRole.TEACHER) {
+            throw new common_1.ForbiddenException('Only assistants and teachers can remove students from lessons');
         }
         const user = await this.userService.findOneById(userId);
-        if (!user || user.role !== user_role_enum_1.UserRole.ASSISTANT) {
-            throw new common_1.NotFoundException('Assistant not found');
+        if (!user || (user.role !== user_role_enum_1.UserRole.ASSISTANT && user.role !== user_role_enum_1.UserRole.TEACHER)) {
+            throw new common_1.NotFoundException('Assistant or teacher not found');
         }
         const lesson = await this.lessonRepository.findOne({
             where: { id: lessonId },

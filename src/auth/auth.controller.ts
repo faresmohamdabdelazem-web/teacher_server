@@ -54,6 +54,16 @@ export class AuthController {
     return this.authService.sendForgetPassEmail(sendEmailDto);
   }
 
+  @Post('/check')
+  @HttpCode(HttpStatus.OK)
+  async check(@Body() body: CheckJwtDto, @Req() req: Request) {
+    if (!req.cookies.refreshToken) {
+      throw new UnauthorizedException('Refresh not found');
+    }
+
+    return this.authService.checkAccessToken(body.token);
+  }
+
   @Post('reset-password')
   resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(
@@ -65,11 +75,5 @@ export class AuthController {
   @Post('google')
   googleAuth(@Body() authGoogleDto: SocialLoginDto) {
     return this.authService.googleLogin(authGoogleDto);
-  }
-
-  @Post('logout')
-  @UseGuards(AuthGuard)
-  logout(@GetSignedUser() user: any) {
-    return this.authService.signOut(user.refreshToken);
   }
 }

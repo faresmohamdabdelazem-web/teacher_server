@@ -9,13 +9,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationModule = void 0;
 const common_1 = require("@nestjs/common");
 const notification_service_1 = require("./notification.service");
-const firebase_module_1 = require("../firebase/firebase.module");
 let NotificationModule = class NotificationModule {
 };
 exports.NotificationModule = NotificationModule;
 exports.NotificationModule = NotificationModule = __decorate([
     (0, common_1.Module)({
-        imports: [firebase_module_1.FirebaseModule],
+        imports: [],
         exports: [notification_service_1.NotificationService],
         controllers: [],
         providers: [notification_service_1.NotificationService],

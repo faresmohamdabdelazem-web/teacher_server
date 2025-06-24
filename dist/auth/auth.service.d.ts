@@ -21,26 +21,17 @@ export declare class AuthService {
     private readonly googleAuthService;
     private readonly teacherService;
     private readonly studentService;
-    private refreshTokenStore;
     constructor(jwtService: JwtService, userService: UserService, configService: ConfigService, cloudinary: CloudinaryService, mailService: MailService, googleAuthService: AuthGoogleService, teacherService: TeacherService, studentService: StudentService);
-    private cleanupExpiredTokens;
     signIn(signInDto: SignInDto): Promise<{
         accessToken: string;
-        refreshToken: string;
         user: User;
     }>;
     signUp(createUser: RegisterDto): Promise<{
         accessToken: string;
-        refreshToken: string;
         user: User;
-    }>;
-    refresh(refreshToken: string, accessToken: string): Promise<{
-        accessToken: string;
-        refreshToken: string;
     }>;
     googleLogin(authGoogleLoginDto: SocialLoginDto): Promise<{
         accessToken: string;
-        refreshToken: string;
         user: User;
     }>;
     private updateUserHandler;
@@ -48,7 +39,6 @@ export declare class AuthService {
         status: boolean;
         user: User;
     }>;
-    signOut(refreshToken: string): Promise<void>;
     sendForgetPassEmail(sendEmail: SendEmailDto): Promise<void>;
     checkOtp(otp: string): Promise<boolean>;
     resetPassword(otp: number, password: string): Promise<{
@@ -56,10 +46,6 @@ export declare class AuthService {
     }>;
     private generateOTP;
     private generateAccessToken;
-    private generateRefreshToken;
-    private storeRefreshToken;
-    private getRefreshToken;
-    private deleteRefreshToken;
     private getSignature;
     private generateAndStoreTokens;
     createStudentByAssistant(createStudentDto: CreateStudentDto, id: string): Promise<{

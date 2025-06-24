@@ -36,8 +36,6 @@ import { CreateStudentDto } from 'src/user/student/create-student.dto';
 
 @Injectable()
 export class AuthService {
-  private refreshTokenStore = new Map<string, { userId: string; expiresAt: number }>();
-
   constructor(
     private readonly jwtService: JwtService,
     @Inject(forwardRef(() => UserService))
@@ -48,19 +46,7 @@ export class AuthService {
     private readonly googleAuthService: AuthGoogleService,
     private readonly teacherService: TeacherService,
     private readonly studentService: StudentService,
-  ) {
-    // Clean up expired tokens every 5 minutes
-    setInterval(() => this.cleanupExpiredTokens(), 5 * 60 * 1000);
-  }
-
-  private cleanupExpiredTokens() {
-    const now = Date.now();
-    for (const [token, data] of this.refreshTokenStore.entries()) {
-      if (data.expiresAt < now) {
-        this.refreshTokenStore.delete(token);
-      }
-    }
-  }
+  ) {}
 
   async signIn(signInDto: SignInDto) {
     const { email, password } = signInDto;
@@ -95,61 +81,6 @@ export class AuthService {
     
     console.log('User created with hashed password:', user.password);
     return this.generateAndStoreTokens(user);
-  }
-
-  async refresh(refreshToken: string, accessToken: string) {
-    try {
-      if (!refreshToken || !accessToken) {
-        throw new UnauthorizedException();
-      }
-
-      const refreshPayload = this.jwtService.decode(refreshToken);
-      const accessTokenPayload = this.jwtService.decode(accessToken);
-
-      if (accessTokenPayload.exp > Date.now() / 1000) {
-        throw new UnauthorizedException('Token not expired');
-      }
-
-      if (refreshPayload.userId != accessTokenPayload.userId) {
-        throw new UnauthorizedException('Invalid token');
-      }
-
-      if (refreshPayload.accessSignature != this.getSignature(accessToken)) {
-        console.log('SIG FAIL');
-        throw new UnauthorizedException('Invalid token');
-      }
-
-      const user = await this.userService.findOneById(
-        refreshPayload.userId,
-      );
-
-      // check valid refresh tokeni
-      if (
-        (await this.getRefreshToken(refreshToken)) != user.userId ||
-        !(await this.getRefreshToken(refreshToken))
-      ) {
-        throw new UnauthorizedException('Not valid refresh token');
-      }
-
-      // delete old refresh token
-      await this.deleteRefreshToken(refreshToken);
-      const newAccessToken = this.generateAccessToken(user);
-
-      // create new refresh token
-      const newRefreshToken = this.generateRefreshToken(
-        user,
-        this.getSignature(newAccessToken),
-      );
-
-      await this.storeRefreshToken(newRefreshToken, user.userId);
-
-      return {
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-      };
-    } catch (error) {
-      throw error;
-    }
   }
 
   async googleLogin(authGoogleLoginDto: SocialLoginDto) {
@@ -214,10 +145,6 @@ export class AuthService {
     }
   }
 
-  async signOut(refreshToken: string) {
-    return this.deleteRefreshToken(refreshToken);
-  }
-
   async sendForgetPassEmail(sendEmail: SendEmailDto) {
     const user = await this.userService.findOneByEmail(sendEmail.email);
     if (!user) {
@@ -277,57 +204,14 @@ export class AuthService {
     return accessToken;
   }
 
-  private generateRefreshToken(user: User, accessSignature: string) {
-    const payload = {
-      iat: Date.now(),
-      userId: user.userId,
-      role: user.role,
-      accessSignature,
-    };
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
-    });
-
-    return refreshToken;
-  }
-
-  private async storeRefreshToken(
-    refreshToken: string,
-    userId: string,
-    ttl: number = REFRESH_TTL,
-  ) {
-    const expiresAt = Date.now() + ttl * 1000;
-    this.refreshTokenStore.set(refreshToken, { userId, expiresAt });
-  }
-
-  private async getRefreshToken(refreshToken: string) {
-    const data = this.refreshTokenStore.get(refreshToken);
-    if (!data || data.expiresAt < Date.now()) {
-      this.refreshTokenStore.delete(refreshToken);
-      return null;
-    }
-    return data.userId;
-  }
-
-  private async deleteRefreshToken(refreshToken: string) {
-    this.refreshTokenStore.delete(refreshToken);
-  }
-
   private getSignature(token: string) {
     return token.split('.')[2];
   }
 
   private async generateAndStoreTokens(user: User) {
     const accessToken = this.generateAccessToken(user);
-    const refreshToken = this.generateRefreshToken(
-      user,
-      this.getSignature(accessToken),
-    );
-
-    await this.storeRefreshToken(refreshToken, user.userId, REFRESH_TTL);
     return {
       accessToken,
-      refreshToken,
       user,
     };
   }

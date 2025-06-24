@@ -22,10 +22,8 @@ const path_1 = require("path");
 const handlebars_adapter_1 = require("@nestjs-modules/mailer/dist/adapters/handlebars.adapter");
 const assets_module_1 = require("./assets/assets.module");
 const user_service_1 = require("./user/user.service");
-const firebase_module_1 = require("./firebase/firebase.module");
 const notification_module_1 = require("./notification/notification.module");
 const typeorm_1 = require("@nestjs/typeorm");
-const stripe_module_1 = require("./stripe/stripe.module");
 const lesson_module_1 = require("./lesson/lesson.module");
 let AppModule = class AppModule {
     constructor(userService) {
@@ -82,9 +80,7 @@ exports.AppModule = AppModule = __decorate([
                 },
             }),
             assets_module_1.AssetsModule,
-            firebase_module_1.FirebaseModule,
             notification_module_1.NotificationModule,
-            stripe_module_1.StripeModule,
             lesson_module_1.LessonModule,
         ],
         controllers: [],

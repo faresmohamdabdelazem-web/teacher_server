@@ -10,10 +10,8 @@ import { join } from 'path';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { AssetsModule } from './assets/assets.module';
 import { UserService } from './user/user.service';
-import { FirebaseModule } from './firebase/firebase.module';
 import { NotificationModule } from './notification/notification.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { StripeModule } from './stripe/stripe.module';
 import { LessonModule } from './lesson/lesson.module';
 
 @Module({
@@ -55,9 +53,7 @@ import { LessonModule } from './lesson/lesson.module';
       },
     }),
     AssetsModule,
-    FirebaseModule,
     NotificationModule,
-    StripeModule,
     LessonModule,
   ],  
   controllers: [],

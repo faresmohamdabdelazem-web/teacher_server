@@ -18,9 +18,4 @@ __decorate([
     (0, class_validator_1.IsJWT)(),
     __metadata("design:type", String)
 ], CheckJwtDto.prototype, "token", void 0);
-__decorate([
-    (0, class_validator_1.IsJWT)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], CheckJwtDto.prototype, "refreshToken", void 0);
 //# sourceMappingURL=check.jwt.dto.js.map

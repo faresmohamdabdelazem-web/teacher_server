@@ -25,7 +25,6 @@ import {
 import { PASSPORT_PHOTO_FILE, PROFILE_PHOTO_FILE } from 'src/hatly.constants';
 import { isURL } from 'class-validator';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { StripeService } from 'src/stripe/stripe.service';
 import { plainToClass } from 'class-transformer';
 import { TeacherService } from './teacher/teacher.service';
 import { AssistantService } from './assistant/assistant.service';
@@ -36,7 +35,6 @@ export class UserService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private cloudinary: CloudinaryService,
-    private stripeService: StripeService,
     private teacherService: TeacherService,
     private assistantService: AssistantService,
   ) { }
@@ -79,29 +77,6 @@ export class UserService {
     // Remove data URL prefix if present
     const base64Data = base64String.replace(/^data:image\/[a-z]+;base64,/, '');
     return Buffer.from(base64Data, 'base64');
-  }
-
-  /**
-   * Uploads passport photo to Stripe account for identity verification
-   * @param stripeAccountId - The Stripe account ID
-   * @param passportPhotoUrl - The URL of the passport photo
-   */
-  private async uploadPassportPhotoToStripe(stripeAccountId: string, passportPhotoUrl: string) {
-    try {
-      // If it's a base64 string, convert to buffer
-      if (!isURL(passportPhotoUrl)) {
-        const buffer = this.base64ToBuffer(passportPhotoUrl);
-        await this.stripeService.uploadPassportPhoto(stripeAccountId, buffer);
-        Logger.log(`Passport photo uploaded to Stripe for account ${stripeAccountId}`);
-      } else {
-        // If it's a URL, we need to fetch the image first
-        // For now, we'll skip URL-based images as they're already uploaded to Cloudinary
-        Logger.log(`Skipping Stripe upload for URL-based passport photo: ${passportPhotoUrl}`);
-      }
-    } catch (error) {
-      Logger.error(`Failed to upload passport photo to Stripe: ${error}`);
-      // Don't throw error to avoid breaking the user creation process
-    }
   }
 
 

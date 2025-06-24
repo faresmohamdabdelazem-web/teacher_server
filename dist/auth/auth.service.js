@@ -36,16 +36,6 @@ let AuthService = class AuthService {
         this.googleAuthService = googleAuthService;
         this.teacherService = teacherService;
         this.studentService = studentService;
-        this.refreshTokenStore = new Map();
-        setInterval(() => this.cleanupExpiredTokens(), 5 * 60 * 1000);
-    }
-    cleanupExpiredTokens() {
-        const now = Date.now();
-        for (const [token, data] of this.refreshTokenStore.entries()) {
-            if (data.expiresAt < now) {
-                this.refreshTokenStore.delete(token);
-            }
-        }
     }
     async signIn(signInDto) {
         const { email, password } = signInDto;
@@ -73,41 +63,6 @@ let AuthService = class AuthService {
         const user = await this.userService.create(createUser);
         console.log('User created with hashed password:', user.password);
         return this.generateAndStoreTokens(user);
-    }
-    async refresh(refreshToken, accessToken) {
-        try {
-            if (!refreshToken || !accessToken) {
-                throw new common_1.UnauthorizedException();
-            }
-            const refreshPayload = this.jwtService.decode(refreshToken);
-            const accessTokenPayload = this.jwtService.decode(accessToken);
-            if (accessTokenPayload.exp > Date.now() / 1000) {
-                throw new common_1.UnauthorizedException('Token not expired');
-            }
-            if (refreshPayload.userId != accessTokenPayload.userId) {
-                throw new common_1.UnauthorizedException('Invalid token');
-            }
-            if (refreshPayload.accessSignature != this.getSignature(accessToken)) {
-                console.log('SIG FAIL');
-                throw new common_1.UnauthorizedException('Invalid token');
-            }
-            const user = await this.userService.findOneById(refreshPayload.userId);
-            if ((await this.getRefreshToken(refreshToken)) != user.userId ||
-                !(await this.getRefreshToken(refreshToken))) {
-                throw new common_1.UnauthorizedException('Not valid refresh token');
-            }
-            await this.deleteRefreshToken(refreshToken);
-            const newAccessToken = this.generateAccessToken(user);
-            const newRefreshToken = this.generateRefreshToken(user, this.getSignature(newAccessToken));
-            await this.storeRefreshToken(newRefreshToken, user.userId);
-            return {
-                accessToken: newAccessToken,
-                refreshToken: newRefreshToken,
-            };
-        }
-        catch (error) {
-            throw error;
-        }
     }
     async googleLogin(authGoogleLoginDto) {
         try {
@@ -159,9 +114,6 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('Invalid Token');
         }
     }
-    async signOut(refreshToken) {
-        return this.deleteRefreshToken(refreshToken);
-    }
     async sendForgetPassEmail(sendEmail) {
         const user = await this.userService.findOneByEmail(sendEmail.email);
         if (!user) {
@@ -206,43 +158,13 @@ let AuthService = class AuthService {
         });
         return accessToken;
     }
-    generateRefreshToken(user, accessSignature) {
-        const payload = {
-            iat: Date.now(),
-            userId: user.userId,
-            role: user.role,
-            accessSignature,
-        };
-        const refreshToken = this.jwtService.sign(payload, {
-            secret: this.configService.get('REFRESH_TOKEN_SECRET'),
-        });
-        return refreshToken;
-    }
-    async storeRefreshToken(refreshToken, userId, ttl = hatly_constants_1.REFRESH_TTL) {
-        const expiresAt = Date.now() + ttl * 1000;
-        this.refreshTokenStore.set(refreshToken, { userId, expiresAt });
-    }
-    async getRefreshToken(refreshToken) {
-        const data = this.refreshTokenStore.get(refreshToken);
-        if (!data || data.expiresAt < Date.now()) {
-            this.refreshTokenStore.delete(refreshToken);
-            return null;
-        }
-        return data.userId;
-    }
-    async deleteRefreshToken(refreshToken) {
-        this.refreshTokenStore.delete(refreshToken);
-    }
     getSignature(token) {
         return token.split('.')[2];
     }
     async generateAndStoreTokens(user) {
         const accessToken = this.generateAccessToken(user);
-        const refreshToken = this.generateRefreshToken(user, this.getSignature(accessToken));
-        await this.storeRefreshToken(refreshToken, user.userId, hatly_constants_1.REFRESH_TTL);
         return {
             accessToken,
-            refreshToken,
             user,
         };
     }

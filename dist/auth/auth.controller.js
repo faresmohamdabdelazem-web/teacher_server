@@ -16,13 +16,12 @@ exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
 const sign_in_dto_1 = require("./dto/sign-in.dto");
+const check_jwt_dto_1 = require("./dto/check.jwt.dto");
 const send_email_dto_1 = require("./dto/send-email.dto");
 const reset_password_dto_1 = require("./dto/reset-password.dto");
 const register_dto_1 = require("./dto/register.dto");
 const google_auth_service_1 = require("./google-auth.service");
 const auth_google_dto_1 = require("./dto/auth-google.dto");
-const auth_guard_1 = require("./guard/auth.guard");
-const get_signed_user_decorator_1 = require("../decorators/get.signed.user.decorator");
 let AuthController = class AuthController {
     constructor(authService, googleService) {
         this.authService = authService;
@@ -37,14 +36,17 @@ let AuthController = class AuthController {
     sendEmail(sendEmailDto) {
         return this.authService.sendForgetPassEmail(sendEmailDto);
     }
+    async check(body, req) {
+        if (!req.cookies.refreshToken) {
+            throw new common_1.UnauthorizedException('Refresh not found');
+        }
+        return this.authService.checkAccessToken(body.token);
+    }
     resetPassword(resetPasswordDto) {
         return this.authService.resetPassword(+resetPasswordDto.otp, resetPasswordDto.newPassword);
     }
     googleAuth(authGoogleDto) {
         return this.authService.googleLogin(authGoogleDto);
-    }
-    logout(user) {
-        return this.authService.signOut(user.refreshToken);
     }
 };
 exports.AuthController = AuthController;
@@ -71,6 +73,15 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "sendEmail", null);
 __decorate([
+    (0, common_1.Post)('/check'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [check_jwt_dto_1.CheckJwtDto, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "check", null);
+__decorate([
     (0, common_1.Post)('reset-password'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -84,14 +95,6 @@ __decorate([
     __metadata("design:paramtypes", [auth_google_dto_1.SocialLoginDto]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "googleAuth", null);
-__decorate([
-    (0, common_1.Post)('logout'),
-    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
-    __param(0, (0, get_signed_user_decorator_1.GetSignedUser)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
-], AuthController.prototype, "logout", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
