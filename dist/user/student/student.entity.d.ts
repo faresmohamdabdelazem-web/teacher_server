@@ -11,4 +11,5 @@ export declare class Student {
     updatedAt: Date;
     teachers: Teacher[];
     lessons: Lesson[];
+    generateId(): void;
 }

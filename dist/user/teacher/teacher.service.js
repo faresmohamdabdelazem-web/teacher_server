@@ -103,7 +103,6 @@ let TeacherService = class TeacherService {
             const attendance = await this.attendanceRepository.find({
                 where: {
                     lessonId: lesson.id,
-                    createdAt: (0, typeorm_2.Between)(startOfDay, endOfDay)
                 },
                 relations: ['student'],
                 order: { createdAt: 'ASC' }

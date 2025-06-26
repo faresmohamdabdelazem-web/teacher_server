@@ -37,7 +37,7 @@ export class StudentService {
     return { students };
   }
 
-  async findOne(id: string): Promise<Student> {
+  async findOne(id: string): Promise<{ student: Student }> {
     const student = await this.studentRepository.findOne({
       where: { id },
       relations: ['teachers', 'lessons'],
@@ -47,7 +47,7 @@ export class StudentService {
       throw new NotFoundException('Student not found');
     }
 
-    return student;
+    return { student };
   }
 
   async findByPhoneNumber(phoneNumber: string): Promise<Student | null> {
@@ -56,18 +56,24 @@ export class StudentService {
     });
   }
 
-  async findById(id: string): Promise<Student | null> {
-    return await this.studentRepository.findOne({
+  async findById(id: string): Promise<{ student: Student } | null> {
+    const student = await this.studentRepository.findOne({
       where: { id: id },
       relations: ['teachers', 'lessons'],
     });
+
+    if (!student) {
+      return null;
+    }
+
+    return { student };
   }
 
   async update(id: string, updateStudentDto: Partial<CreateStudentDto>): Promise<Student> {
     const student = await this.findOne(id);
 
     // Check if email is being updated and if it already exists
-    if (updateStudentDto.id && updateStudentDto.id !== student.id) {
+    if (updateStudentDto.id && updateStudentDto.id !== student.student.id) {
       const existingStudent = await this.studentRepository.findOne({
         where: { id: updateStudentDto.id },
       });
@@ -77,13 +83,13 @@ export class StudentService {
       }
     }
 
-    Object.assign(student, updateStudentDto);
-    return await this.studentRepository.save(student);
+    Object.assign(student.student, updateStudentDto);
+    return await this.studentRepository.save(student.student);
   }
 
   async remove(id: string): Promise<void> {
     const student = await this.findOne(id);
-    await this.studentRepository.remove(student);
+    await this.studentRepository.remove(student.student);
   }
 
   async getStudentTeachers(id: string): Promise<{ teachers: any[] }> {

@@ -58,10 +58,7 @@ let LessonController = class LessonController {
         return this.lessonService.markAttendance(markAttendanceDto, user.id, user.role);
     }
     getLessonAttendance(id, date) {
-        if (date) {
-            return this.lessonService.getLessonAttendanceForDate(id, date);
-        }
-        return this.lessonService.getLessonAttendance(id);
+        return this.lessonService.getLessonAttendance(id, date);
     }
     getStudentAttendanceHistory(studentId) {
         return this.lessonService.getStudentAttendanceHistory(studentId);

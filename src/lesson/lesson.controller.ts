@@ -115,10 +115,7 @@ export class LessonController {
     @Param('id') id: string,
     @Query('date') date?: string,
   ) {
-    if (date) {
-      return this.lessonService.getLessonAttendanceForDate(id, date);
-    }
-    return this.lessonService.getLessonAttendance(id);
+    return this.lessonService.getLessonAttendance(id, date);
   }
 
   @Get('student/:studentId/attendance-history')

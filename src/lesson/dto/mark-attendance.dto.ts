@@ -1,5 +1,6 @@
 import { IsNotEmpty, IsString, IsEnum, IsOptional, IsUUID } from 'class-validator';
 import { AttendanceStatus } from '../entities/lesson-attendance.entity';
+import { IsULID } from '../../decorators/is.ulid.decorator';
 
 export class MarkAttendanceDto {
   @IsNotEmpty()
@@ -7,7 +8,7 @@ export class MarkAttendanceDto {
   lessonId: string;
 
   @IsNotEmpty()
-  @IsUUID()
+  @IsULID()
   studentId: string;
 
   @IsNotEmpty()

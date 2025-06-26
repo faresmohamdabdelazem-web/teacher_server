@@ -1,4 +1,5 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, IsBoolean, IsDateString, IsUUID } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, IsBoolean, IsDateString } from 'class-validator';
+import { IsULID } from '../../decorators/is.ulid.decorator';
 
 export class CreateStudentDto {
   @IsNotEmpty()
@@ -26,6 +27,6 @@ export class CreateStudentDto {
   grade?: string;
 
   @IsOptional()
-  @IsString()
+  @IsULID()
   id?: string;
 } 

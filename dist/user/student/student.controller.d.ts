@@ -7,7 +7,9 @@ export declare class StudentController {
     findAll(): Promise<{
         students: import("./student.entity").Student[];
     }>;
-    findOne(id: string): Promise<import("./student.entity").Student>;
+    findOne(id: string): Promise<{
+        student: import("./student.entity").Student;
+    }>;
     findByPhoneNumber(phoneNumber: string): Promise<import("./student.entity").Student>;
     update(id: string, updateStudentDto: Partial<CreateStudentDto>): Promise<import("./student.entity").Student>;
     remove(id: string): Promise<void>;

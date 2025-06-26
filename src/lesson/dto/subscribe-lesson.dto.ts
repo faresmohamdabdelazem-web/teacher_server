@@ -1,8 +1,9 @@
 import { IsNotEmpty, IsUUID } from 'class-validator';
+import { IsULID } from '../../decorators/is.ulid.decorator';
 
 export class SubscribeLessonDto {
   @IsNotEmpty()
-  @IsUUID()
+  @IsULID()
   studentId: string;
 
   @IsNotEmpty()

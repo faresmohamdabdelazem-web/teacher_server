@@ -1,18 +1,20 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   ManyToMany,
   JoinTable,
+  BeforeInsert,
 } from 'typeorm';
 import { Teacher } from '../teacher/teacher.entity';
 import { Lesson } from '../../lesson/entities/lesson.entity';
+import { ulid } from 'ulid';
 
 @Entity('students')
 export class Student {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn()
   id: string;
 
   @Column()
@@ -43,4 +45,9 @@ export class Student {
   // Relationship with Lessons
   @ManyToMany(() => Lesson, (lesson) => lesson.students)
   lessons: Lesson[];
+
+  @BeforeInsert()
+  generateId() {
+    this.id = ulid();
+  }
 } 

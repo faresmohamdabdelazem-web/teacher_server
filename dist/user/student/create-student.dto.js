@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateStudentDto = void 0;
 const class_validator_1 = require("class-validator");
+const is_ulid_decorator_1 = require("../../decorators/is.ulid.decorator");
 class CreateStudentDto {
 }
 exports.CreateStudentDto = CreateStudentDto;
@@ -46,7 +47,7 @@ __decorate([
 ], CreateStudentDto.prototype, "grade", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, is_ulid_decorator_1.IsULID)(),
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "id", void 0);
 //# sourceMappingURL=create-student.dto.js.map

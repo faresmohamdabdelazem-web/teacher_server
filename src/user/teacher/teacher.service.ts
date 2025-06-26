@@ -119,7 +119,7 @@ export class TeacherService {
         const attendance = await this.attendanceRepository.find({
           where: { 
             lessonId: lesson.id,
-            createdAt: Between(startOfDay, endOfDay)
+            // createdAt: Between(startOfDay, endOfDay)
           },
           relations: ['student'],
           order: { createdAt: 'ASC' }

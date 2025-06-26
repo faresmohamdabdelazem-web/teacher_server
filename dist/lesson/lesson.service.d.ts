@@ -22,6 +22,7 @@ export declare class LessonService {
     } | {
         lesson: Lesson;
     }>;
+    private checkAndUpdateExpiredLessons;
     findAll(): Promise<{
         lessons: Lesson[];
     }>;
@@ -65,7 +66,7 @@ export declare class LessonService {
     markAttendance(markAttendanceDto: MarkAttendanceDto, userId: string, userRole: string): Promise<{
         attendance: LessonAttendance;
     }>;
-    getLessonAttendance(lessonId: string): Promise<{
+    getLessonAttendance(lessonId: string, date?: string): Promise<{
         attendance: LessonAttendance[];
     }>;
     getLessonAttendanceHistory(lessonId: string, startDate: string, endDate: string): Promise<{

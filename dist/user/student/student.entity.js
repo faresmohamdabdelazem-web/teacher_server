@@ -13,11 +13,15 @@ exports.Student = void 0;
 const typeorm_1 = require("typeorm");
 const teacher_entity_1 = require("../teacher/teacher.entity");
 const lesson_entity_1 = require("../../lesson/entities/lesson.entity");
+const ulid_1 = require("ulid");
 let Student = class Student {
+    generateId() {
+        this.id = (0, ulid_1.ulid)();
+    }
 };
 exports.Student = Student;
 __decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)('uuid'),
+    (0, typeorm_1.PrimaryColumn)(),
     __metadata("design:type", String)
 ], Student.prototype, "id", void 0);
 __decorate([
@@ -56,6 +60,12 @@ __decorate([
     (0, typeorm_1.ManyToMany)(() => lesson_entity_1.Lesson, (lesson) => lesson.students),
     __metadata("design:type", Array)
 ], Student.prototype, "lessons", void 0);
+__decorate([
+    (0, typeorm_1.BeforeInsert)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], Student.prototype, "generateId", null);
 exports.Student = Student = __decorate([
     (0, typeorm_1.Entity)('students')
 ], Student);

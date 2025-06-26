@@ -82,10 +82,39 @@ export class LessonService {
     };
   }
 
+  // Helper method to check and update expired lessons
+  private async checkAndUpdateExpiredLessons(lessons: Lesson[]): Promise<void> {
+    const now = new Date();
+    const lessonsToUpdate: Lesson[] = [];
+
+    for (const lesson of lessons) {
+      if (lesson.scheduledDate && lesson.status !== LessonStatus.COMPLETED && lesson.status !== LessonStatus.CANCELLED && lesson.status !== LessonStatus.EXPIRED) {
+        const lessonDate = new Date(lesson.scheduledDate);
+        
+        // Calculate 2 hours after the lesson's scheduled date
+        const lessonEndTime = new Date(lessonDate.getTime() + (2 * 60 * 60 * 1000)); // 2 hours in milliseconds
+        
+        // If current time is more than 2 hours after lesson date, mark it as expired
+        if (now > lessonEndTime) {
+          lesson.status = LessonStatus.EXPIRED;
+          lessonsToUpdate.push(lesson);
+        }
+      }
+    }
+
+    // Save updated lessons if any
+    if (lessonsToUpdate.length > 0) {
+      await this.lessonRepository.save(lessonsToUpdate);
+    }
+  }
+
   async findAll(): Promise<{ lessons: Lesson[] }> {
     const lessons = await this.lessonRepository.find({
       relations: ['teacher', 'students'],
     });
+
+    // Check for expired lessons and update their status
+    await this.checkAndUpdateExpiredLessons(lessons);
 
     // Add attendance history to each lesson (filtered by current occurrence date)
     const lessonsWithAttendance = await Promise.all(
@@ -151,6 +180,9 @@ export class LessonService {
       where: { subject },
       relations: ['teacher', 'students'],
     });
+
+    // Check for expired lessons and update their status
+    await this.checkAndUpdateExpiredLessons(lessons);
 
     // Add attendance history to each lesson (filtered by current occurrence date)
     const lessonsWithAttendance = await Promise.all(
@@ -247,6 +279,9 @@ export class LessonService {
       where: { teacherId },
       relations: ['teacher', 'students'],
     });
+
+    // Check for expired lessons and update their status
+    await this.checkAndUpdateExpiredLessons(lessons);
 
     // Add attendance history to each lesson (filtered by current occurrence date)
     const lessonsWithAttendance = await Promise.all(
@@ -488,6 +523,14 @@ export class LessonService {
     if (today < lessonDate) {
       throw new BadRequestException('Attendance cannot be started before the scheduled date');
     }
+
+    // Check if lesson is in the past (more than 1 day old)
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (lessonDate < yesterday) {
+      throw new BadRequestException('Attendance cannot be started for lessons that are more than 1 day in the past');
+    }
     
     if (!attendanceStartTime) {
       throw new BadRequestException('Lesson does not have a scheduled start time');
@@ -545,17 +588,29 @@ export class LessonService {
 
     const lesson = await this.findOne(markAttendanceDto.lessonId);
     
+    // Check if lesson is in the past (more than 1 day old)
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const scheduledDate = new Date(lesson.lesson.scheduledDate);
+    const lessonDate = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const students = await this.getLessonStudents(markAttendanceDto.lessonId);
+    const isEnrolled = students.students.some(student => student.id === markAttendanceDto.studentId);
+    if (!isEnrolled) {
+      throw new BadRequestException('Student is not enrolled in this lesson');
+    }
+    if (lessonDate < yesterday) {
+      throw new BadRequestException('Attendance cannot be marked for lessons that are more than 1 day in the past');
+    }
+    
     // Check if attendance is open or lesson is in progress
     if (lesson.lesson.status !== LessonStatus.ATTENDANCE_OPEN && lesson.lesson.status !== LessonStatus.IN_PROGRESS) {
       throw new BadRequestException('Attendance can only be marked when lesson is open for attendance or in progress');
     }
 
     // Verify student is enrolled in the lesson
-    const students = await this.getLessonStudents(markAttendanceDto.lessonId);
-    const isEnrolled = students.students.some(student => student.id === markAttendanceDto.studentId);
-    if (!isEnrolled) {
-      throw new BadRequestException('Student is not enrolled in this lesson');
-    }
 
     // Find or create attendance record
     let attendance = await this.attendanceRepository.findOne({
@@ -590,24 +645,35 @@ export class LessonService {
   }
 
   // Get attendance for a lesson (filtered by current occurrence date)
-  async getLessonAttendance(lessonId: string): Promise<{ attendance: LessonAttendance[] }> {
+  async getLessonAttendance(lessonId: string, date?: string): Promise<{ attendance: LessonAttendance[] }> {
     const lesson = await this.findOne(lessonId);
     
-    // Get the start and end of the lesson's scheduled date
-    const lessonDate = new Date(lesson.lesson.scheduledDate);
-    const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
-    const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
-    
-    const attendance = await this.attendanceRepository.find({
-      where: { 
-        lessonId,
-        createdAt: Between(startOfDay, endOfDay)
-      },
-      relations: ['student'],
-      order: { createdAt: 'ASC' }
-    });
+    if (date) {
+      // If date is provided, filter by that specific date
+      const targetDate = new Date(date);
+      const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+      const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999);
+      
+      const attendance = await this.attendanceRepository.find({
+        where: { 
+          lessonId,
+          createdAt: Between(startOfDay, endOfDay)
+        },
+        relations: ['student'],
+        order: { createdAt: 'ASC' }
+      });
 
-    return { attendance };
+      return { attendance };
+    } else {
+      // If no date provided, return current attendance only (not filtered by date)
+      const attendance = await this.attendanceRepository.find({
+        where: { lessonId },
+        relations: ['student'],
+        order: { createdAt: 'ASC' }
+      });
+
+      return { attendance };
+    }
   }
 
   // Get lesson attendance history for a specific date range
@@ -800,6 +866,9 @@ export class LessonService {
       order: { scheduledDate: 'ASC' }
     });
 
+    // Check for expired lessons and update their status
+    await this.checkAndUpdateExpiredLessons(lessons);
+
     // Add attendance history to each lesson (filtered by current occurrence date)
     const lessonsWithAttendance = await Promise.all(
       lessons.map(async (lesson) => {
@@ -834,6 +903,9 @@ export class LessonService {
       relations: ['teacher', 'students'],
       order: { scheduledDate: 'DESC' }
     });
+
+    // Check for expired lessons and update their status
+    await this.checkAndUpdateExpiredLessons(lessons);
 
     // Add attendance history to each lesson (filtered by current occurrence date)
     const lessonsWithAttendance = await Promise.all(
@@ -890,6 +962,9 @@ export class LessonService {
       relations: ['teacher', 'students'],
       order: { startTime: 'ASC' },
     });
+
+    // Check for expired lessons and update their status
+    await this.checkAndUpdateExpiredLessons(lessons);
 
     // Add attendance history to each lesson (filtered by current occurrence date)
     const lessonsWithAttendance = await Promise.all(

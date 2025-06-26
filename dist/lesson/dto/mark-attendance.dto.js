@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MarkAttendanceDto = void 0;
 const class_validator_1 = require("class-validator");
 const lesson_attendance_entity_1 = require("../entities/lesson-attendance.entity");
+const is_ulid_decorator_1 = require("../../decorators/is.ulid.decorator");
 class MarkAttendanceDto {
 }
 exports.MarkAttendanceDto = MarkAttendanceDto;
@@ -22,7 +23,7 @@ __decorate([
 ], MarkAttendanceDto.prototype, "lessonId", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsUUID)(),
+    (0, is_ulid_decorator_1.IsULID)(),
     __metadata("design:type", String)
 ], MarkAttendanceDto.prototype, "studentId", void 0);
 __decorate([

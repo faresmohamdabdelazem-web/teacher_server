@@ -27,6 +27,7 @@ var LessonStatus;
     LessonStatus["IN_PROGRESS"] = "in_progress";
     LessonStatus["COMPLETED"] = "completed";
     LessonStatus["CANCELLED"] = "cancelled";
+    LessonStatus["EXPIRED"] = "expired";
 })(LessonStatus || (exports.LessonStatus = LessonStatus = {}));
 let Lesson = class Lesson {
 };

@@ -11,12 +11,13 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubscribeLessonDto = void 0;
 const class_validator_1 = require("class-validator");
+const is_ulid_decorator_1 = require("../../decorators/is.ulid.decorator");
 class SubscribeLessonDto {
 }
 exports.SubscribeLessonDto = SubscribeLessonDto;
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsUUID)(),
+    (0, is_ulid_decorator_1.IsULID)(),
     __metadata("design:type", String)
 ], SubscribeLessonDto.prototype, "studentId", void 0);
 __decorate([

@@ -11,7 +11,8 @@ export declare enum LessonStatus {
     ATTENDANCE_OPEN = "attendance_open",
     IN_PROGRESS = "in_progress",
     COMPLETED = "completed",
-    CANCELLED = "cancelled"
+    CANCELLED = "cancelled",
+    EXPIRED = "expired"
 }
 export declare class Lesson {
     id: string;

@@ -50,7 +50,7 @@ let StudentService = class StudentService {
         if (!student) {
             throw new common_1.NotFoundException('Student not found');
         }
-        return student;
+        return { student };
     }
     async findByPhoneNumber(phoneNumber) {
         return await this.studentRepository.findOne({
@@ -58,14 +58,18 @@ let StudentService = class StudentService {
         });
     }
     async findById(id) {
-        return await this.studentRepository.findOne({
+        const student = await this.studentRepository.findOne({
             where: { id: id },
             relations: ['teachers', 'lessons'],
         });
+        if (!student) {
+            return null;
+        }
+        return { student };
     }
     async update(id, updateStudentDto) {
         const student = await this.findOne(id);
-        if (updateStudentDto.id && updateStudentDto.id !== student.id) {
+        if (updateStudentDto.id && updateStudentDto.id !== student.student.id) {
             const existingStudent = await this.studentRepository.findOne({
                 where: { id: updateStudentDto.id },
             });
@@ -73,12 +77,12 @@ let StudentService = class StudentService {
                 throw new common_1.ConflictException('Student with this studentId not found');
             }
         }
-        Object.assign(student, updateStudentDto);
-        return await this.studentRepository.save(student);
+        Object.assign(student.student, updateStudentDto);
+        return await this.studentRepository.save(student.student);
     }
     async remove(id) {
         const student = await this.findOne(id);
-        await this.studentRepository.remove(student);
+        await this.studentRepository.remove(student.student);
     }
     async getStudentTeachers(id) {
         const student = await this.studentRepository.findOne({
