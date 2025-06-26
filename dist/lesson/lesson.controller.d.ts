@@ -4,6 +4,7 @@ import { UnsubscribeLessonDto } from './dto/unsubscribe-lesson.dto';
 import { AddStudentToLessonDto } from './dto/add-student-to-lesson.dto';
 import { RemoveStudentFromLessonDto } from './dto/remove-student-from-lesson.dto';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
+import { LessonStatus } from './entities/lesson.entity';
 export declare class LessonController {
     private readonly lessonService;
     constructor(lessonService: LessonService);
@@ -34,8 +35,10 @@ export declare class LessonController {
     startAttendance(lessonId: string, user: any): Promise<{
         lesson: import("./entities/lesson.entity").Lesson;
     }>;
-    markAttendance(markAttendanceDto: MarkAttendanceDto, user: any): Promise<import("./entities/lesson-attendance.entity").LessonAttendance>;
-    getLessonAttendance(lessonId: string): Promise<{
+    markAttendance(markAttendanceDto: MarkAttendanceDto, user: any): Promise<{
+        attendance: import("./entities/lesson-attendance.entity").LessonAttendance;
+    }>;
+    getLessonAttendance(id: string, date?: string): Promise<{
         attendance: import("./entities/lesson-attendance.entity").LessonAttendance[];
     }>;
     getStudentAttendanceHistory(studentId: string): Promise<{
@@ -59,7 +62,8 @@ export declare class LessonController {
     update(id: string, updateLessonDto: Partial<CreateLessonDto>, user: any): Promise<import("./entities/lesson.entity").Lesson>;
     remove(id: string, user: any): Promise<void>;
     addStudentToLesson(addStudentDto: AddStudentToLessonDto, user: any): Promise<{
-        lesson: import("./entities/lesson.entity").Lesson;
+        lessonId: string;
+        studentId: string;
     }>;
     removeStudentFromLesson(removeStudentDto: RemoveStudentFromLessonDto, user: any): Promise<{
         lesson: import("./entities/lesson.entity").Lesson;
@@ -71,4 +75,7 @@ export declare class LessonController {
         subscriptions: import("./entities/lesson.entity").Lesson[];
     }>;
     checkStudentSubscription(studentId: string, lessonId: string): Promise<boolean>;
+    getTeacherTodayLessons(teacherId: string, subject?: string, status?: LessonStatus): Promise<{
+        lessons: import("./entities/lesson.entity").Lesson[];
+    }>;
 }

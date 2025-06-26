@@ -1,29 +1,34 @@
 import {
   Entity,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   ManyToMany,
   JoinTable,
-  OneToOne,
-  JoinColumn,
 } from 'typeorm';
 import { Teacher } from '../teacher/teacher.entity';
 import { Lesson } from '../../lesson/entities/lesson.entity';
-import { User } from '../entities/user.entity';
 
 @Entity('students')
 export class Student {
-  @PrimaryColumn('uuid')
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'id' })
-  user: User;
+  @Column()
+  firstName: string;
+
+  @Column()
+  lastName: string;
 
   @Column({ nullable: true })
-  parentPhoneNumber: string;
+  phoneNumber?: string;
+
+  @Column({ nullable: true })
+  parentPhoneNumber?: string;
+
+  @Column({ nullable: true })
+  grade?: string;
 
   @CreateDateColumn()
   createdAt: Date;

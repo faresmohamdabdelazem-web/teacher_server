@@ -14,6 +14,7 @@ const typeorm_1 = require("typeorm");
 const lesson_entity_1 = require("../../lesson/entities/lesson.entity");
 const student_entity_1 = require("../student/student.entity");
 const user_entity_1 = require("../entities/user.entity");
+const assistant_entity_1 = require("../assistant/assistant.entity");
 let Teacher = class Teacher {
 };
 exports.Teacher = Teacher;
@@ -47,6 +48,10 @@ __decorate([
     }),
     __metadata("design:type", Array)
 ], Teacher.prototype, "students", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => assistant_entity_1.Assistant, (assistant) => assistant.teacher),
+    __metadata("design:type", Array)
+], Teacher.prototype, "assistants", void 0);
 exports.Teacher = Teacher = __decorate([
     (0, typeorm_1.Entity)('teachers')
 ], Teacher);

@@ -80,4 +80,14 @@ __decorate([
     (0, class_validator_1.IsEnum)(lesson_entity_1.LessonStatus),
     __metadata("design:type", String)
 ], CreateLessonDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateLessonDto.prototype, "price", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateLessonDto.prototype, "grade", void 0);
 //# sourceMappingURL=create-lesson.dto.js.map

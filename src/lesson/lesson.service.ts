@@ -12,7 +12,7 @@ import { Teacher } from '../user/teacher/teacher.entity';
 import { Student } from '../user/student/student.entity';
 import { UserService } from '../user/user.service';
 import { UserRole } from '../user/user.role.enum';
-import { MoreThan } from 'typeorm';
+import { MoreThan, Between } from 'typeorm';
 
 @Injectable()
 export class LessonService {
@@ -70,7 +70,7 @@ export class LessonService {
     }
 
     // Ensure the lesson is assigned to the correct teacher
-    const lesson = this.lessonRepository.create({ ...createLessonDto, teacherId: teacher.id });
+    const lesson = this.lessonRepository.create({ ...createLessonDto, teacherId: teacher.id, price: createLessonDto.price });
     const savedLesson = await this.lessonRepository.save(lesson);
     // Reload the lesson with the teacher relation
     const lessonWithTeacher = await this.lessonRepository.findOne({
@@ -86,7 +86,32 @@ export class LessonService {
     const lessons = await this.lessonRepository.find({
       relations: ['teacher', 'students'],
     });
-    return { lessons };
+
+    // Add attendance history to each lesson (filtered by current occurrence date)
+    const lessonsWithAttendance = await Promise.all(
+      lessons.map(async (lesson) => {
+        // Get the start and end of the lesson's scheduled date
+        const lessonDate = new Date(lesson.scheduledDate);
+        const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+        const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+
+        const attendance = await this.attendanceRepository.find({
+          where: { 
+            lessonId: lesson.id,
+            createdAt: Between(startOfDay, endOfDay)
+          },
+          relations: ['student'],
+          order: { createdAt: 'ASC' }
+        });
+
+        return {
+          ...lesson,
+          attendanceHistory: attendance
+        };
+      })
+    );
+
+    return { lessons: lessonsWithAttendance };
   }
 
   async findOne(id: string): Promise<{lesson: Lesson}> {
@@ -99,7 +124,26 @@ export class LessonService {
       throw new NotFoundException('Lesson not found');
     }
 
-    return { lesson };
+    // Get attendance history for current occurrence
+    const lessonDate = new Date(lesson.scheduledDate);
+    const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+    const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+
+    const attendance = await this.attendanceRepository.find({
+      where: { 
+        lessonId: lesson.id,
+        createdAt: Between(startOfDay, endOfDay)
+      },
+      relations: ['student'],
+      order: { createdAt: 'ASC' }
+    });
+
+    return { 
+      lesson: {
+        ...lesson,
+        attendanceHistory: attendance
+      } as any
+    };
   }
 
   async findBySubject(subject: string): Promise<{ lessons: Lesson[] }> {
@@ -107,7 +151,32 @@ export class LessonService {
       where: { subject },
       relations: ['teacher', 'students'],
     });
-    return { lessons };
+
+    // Add attendance history to each lesson (filtered by current occurrence date)
+    const lessonsWithAttendance = await Promise.all(
+      lessons.map(async (lesson) => {
+        // Get the start and end of the lesson's scheduled date
+        const lessonDate = new Date(lesson.scheduledDate);
+        const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+        const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+
+        const attendance = await this.attendanceRepository.find({
+          where: { 
+            lessonId: lesson.id,
+            createdAt: Between(startOfDay, endOfDay)
+          },
+          relations: ['student'],
+          order: { createdAt: 'ASC' }
+        });
+
+        return {
+          ...lesson,
+          attendanceHistory: attendance
+        };
+      })
+    );
+
+    return { lessons: lessonsWithAttendance };
   }
 
   async update(id: string, updateLessonDto: Partial<CreateLessonDto>, userId: string, userRole: string): Promise<Lesson> {
@@ -178,11 +247,36 @@ export class LessonService {
       where: { teacherId },
       relations: ['teacher', 'students'],
     });
-    return { lessons };
+
+    // Add attendance history to each lesson (filtered by current occurrence date)
+    const lessonsWithAttendance = await Promise.all(
+      lessons.map(async (lesson) => {
+        // Get the start and end of the lesson's scheduled date
+        const lessonDate = new Date(lesson.scheduledDate);
+        const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+        const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+
+        const attendance = await this.attendanceRepository.find({
+          where: { 
+            lessonId: lesson.id,
+            createdAt: Between(startOfDay, endOfDay)
+          },
+          relations: ['student'],
+          order: { createdAt: 'ASC' }
+        });
+
+        return {
+          ...lesson,
+          attendanceHistory: attendance
+        };
+      })
+    );
+
+    return { lessons: lessonsWithAttendance };
   }
 
   // Only assistants can add students to lessons
-  async addStudentToLesson(lessonId: string, studentId: string, userId: string, userRole: string): Promise<{ lesson: Lesson }> {
+  async addStudentToLesson(lessonId: string, studentId: string, userId: string, userRole: string): Promise<{ lessonId: string, studentId: string }> {
     // Validate that only assistants can add students to lessons
     if (userRole !== UserRole.ASSISTANT && userRole !== UserRole.TEACHER) {
       throw new ForbiddenException('Only assistants and teachers can add students to lessons');
@@ -211,6 +305,11 @@ export class LessonService {
       throw new NotFoundException('Student not found');
     }
 
+    // Check if student grade matches lesson grade
+    if (lesson.grade && student.grade && lesson.grade !== student.grade) {
+      throw new BadRequestException(`Student grade (${student.grade}) does not match lesson grade (${lesson.grade})`);
+    }
+
     // Check if student is already added to this lesson
     const isAlreadyAdded = lesson.students.some(student => student.id === studentId);
     if (isAlreadyAdded) {
@@ -224,8 +323,11 @@ export class LessonService {
       .of(lesson)
       .add(studentId);
 
-    // Return updated lesson with students
-    return await this.findOne(lessonId);
+    // Return only lessonId and studentId
+    return {
+      lessonId: lessonId,
+      studentId: studentId,
+    };
   }
 
   // Only assistants can remove students from lessons
@@ -328,7 +430,32 @@ export class LessonService {
       where: { scheduledDate: new Date(date) },
       relations: ['teacher', 'students'],
     });
-    return { lessons };
+
+    // Add attendance history to each lesson (filtered by current occurrence date)
+    const lessonsWithAttendance = await Promise.all(
+      lessons.map(async (lesson) => {
+        // Get the start and end of the lesson's scheduled date
+        const lessonDate = new Date(lesson.scheduledDate);
+        const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+        const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+
+        const attendance = await this.attendanceRepository.find({
+          where: { 
+            lessonId: lesson.id,
+            createdAt: Between(startOfDay, endOfDay)
+          },
+          relations: ['student'],
+          order: { createdAt: 'ASC' }
+        });
+
+        return {
+          ...lesson,
+          attendanceHistory: attendance
+        };
+      })
+    );
+
+    return { lessons: lessonsWithAttendance };
   }
 
   // async getLessonsByGrade(grade: string): Promise<Lesson[]> {
@@ -349,6 +476,18 @@ export class LessonService {
     // Check if it's time to start attendance (1 hour before lesson start)
     const now = new Date();
     const attendanceStartTime = lesson.lesson.attendanceStartTime;
+    
+    // Check if it's before the scheduled date - compare only the date part
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const scheduledDate = new Date(lesson.lesson.scheduledDate);
+    const lessonDate = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate());
+    
+    console.log('Today (date only):', today);
+    console.log('Lesson date (date only):', lessonDate);
+    
+    if (today < lessonDate) {
+      throw new BadRequestException('Attendance cannot be started before the scheduled date');
+    }
     
     if (!attendanceStartTime) {
       throw new BadRequestException('Lesson does not have a scheduled start time');
@@ -399,7 +538,7 @@ export class LessonService {
   }
 
   // Mark student attendance
-  async markAttendance(markAttendanceDto: MarkAttendanceDto, userId: string, userRole: string): Promise<LessonAttendance> {
+  async markAttendance(markAttendanceDto: MarkAttendanceDto, userId: string, userRole: string): Promise<{ attendance: LessonAttendance }> {
     if (userRole !== UserRole.TEACHER && userRole !== UserRole.ASSISTANT) {
       throw new ForbiddenException('Only teachers and assistants can mark attendance');
     }
@@ -439,15 +578,71 @@ export class LessonService {
       attendance.markedBy = userId;
     }
 
-    return await this.attendanceRepository.save(attendance);
+    const savedAttendance = await this.attendanceRepository.save(attendance);
+    
+    // Reload with student relation
+    const attendanceWithStudent = await this.attendanceRepository.findOne({
+      where: { id: savedAttendance.id },
+      relations: ['student']
+    });
+
+    return { attendance: attendanceWithStudent };
   }
 
-  // Get attendance for a lesson
+  // Get attendance for a lesson (filtered by current occurrence date)
   async getLessonAttendance(lessonId: string): Promise<{ attendance: LessonAttendance[] }> {
     const lesson = await this.findOne(lessonId);
     
+    // Get the start and end of the lesson's scheduled date
+    const lessonDate = new Date(lesson.lesson.scheduledDate);
+    const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+    const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+    
     const attendance = await this.attendanceRepository.find({
-      where: { lessonId },
+      where: { 
+        lessonId,
+        createdAt: Between(startOfDay, endOfDay)
+      },
+      relations: ['student'],
+      order: { createdAt: 'ASC' }
+    });
+
+    return { attendance };
+  }
+
+  // Get lesson attendance history for a specific date range
+  async getLessonAttendanceHistory(lessonId: string, startDate: string, endDate: string): Promise<{ attendance: LessonAttendance[] }> {
+    const lesson = await this.findOne(lessonId);
+    
+    const startOfRange = new Date(startDate);
+    const endOfRange = new Date(endDate);
+    endOfRange.setHours(23, 59, 59, 999);
+    
+    const attendance = await this.attendanceRepository.find({
+      where: { 
+        lessonId,
+        createdAt: Between(startOfRange, endOfRange)
+      },
+      relations: ['student'],
+      order: { createdAt: 'ASC' }
+    });
+
+    return { attendance };
+  }
+
+  // Get lesson attendance for a specific date
+  async getLessonAttendanceForDate(lessonId: string, date: string): Promise<{ attendance: LessonAttendance[] }> {
+    const lesson = await this.findOne(lessonId);
+    
+    const targetDate = new Date(date);
+    const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+    const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999);
+    
+    const attendance = await this.attendanceRepository.find({
+      where: { 
+        lessonId,
+        createdAt: Between(startOfDay, endOfDay)
+      },
       relations: ['student'],
       order: { createdAt: 'ASC' }
     });
@@ -497,38 +692,27 @@ export class LessonService {
     lesson.lesson.status = LessonStatus.COMPLETED;
     const completedLesson = await this.lessonRepository.save(lesson.lesson);
 
-    // If this is a recurring lesson, schedule the next occurrence
+    // If this is a recurring lesson, update the same lesson for next occurrence
     if (lesson.lesson.recurrenceType !== LessonRecurrenceType.NONE) {
-      await this.scheduleNextOccurrence(lesson.lesson);
+      const nextDate = this.calculateNextOccurrence(lesson.lesson);
+      
+      if (nextDate) {
+        // Update the same lesson entity for next occurrence
+        completedLesson.status = LessonStatus.SCHEDULED;
+        completedLesson.scheduledDate = nextDate;
+        
+        // Recalculate attendance start time for next occurrence
+        if (completedLesson.startTime) {
+          const startTime = new Date(completedLesson.startTime);
+          const attendanceStartTime = new Date(startTime.getTime() - 60 * 60 * 1000); // 1 hour before
+          completedLesson.attendanceStartTime = attendanceStartTime;
+        }
+        
+        await this.lessonRepository.save(completedLesson);
+      }
     }
 
     return { lesson: completedLesson };
-  }
-
-  // Schedule next occurrence for recurring lessons
-  private async scheduleNextOccurrence(lesson: Lesson): Promise<void> {
-    const nextDate = this.calculateNextOccurrence(lesson);
-    
-    if (nextDate) {
-      // Create a new lesson instance for the next occurrence
-      const nextLesson = this.lessonRepository.create({
-        title: lesson.title,
-        description: lesson.description,
-        subject: lesson.subject,
-        scheduledDate: nextDate,
-        startTime: lesson.startTime,
-        endTime: lesson.endTime,
-        attendanceStartTime: lesson.attendanceStartTime,
-        room: lesson.room,
-        teacherId: lesson.teacherId,
-        recurrenceType: lesson.recurrenceType,
-        recurrencePattern: lesson.recurrencePattern,
-        status: LessonStatus.SCHEDULED,
-        students: lesson.students // Copy enrolled students to next occurrence
-      });
-
-      await this.lessonRepository.save(nextLesson);
-    }
   }
 
   // Calculate next occurrence date based on recurrence pattern
@@ -615,8 +799,32 @@ export class LessonService {
       relations: ['teacher', 'students'],
       order: { scheduledDate: 'ASC' }
     });
+
+    // Add attendance history to each lesson (filtered by current occurrence date)
+    const lessonsWithAttendance = await Promise.all(
+      lessons.map(async (lesson) => {
+        // Get the start and end of the lesson's scheduled date
+        const lessonDate = new Date(lesson.scheduledDate);
+        const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+        const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+
+        const attendance = await this.attendanceRepository.find({
+          where: { 
+            lessonId: lesson.id,
+            createdAt: Between(startOfDay, endOfDay)
+          },
+          relations: ['student'],
+          order: { createdAt: 'ASC' }
+        });
+
+        return {
+          ...lesson,
+          attendanceHistory: attendance
+        };
+      })
+    );
     
-    return { lessons };
+    return { lessons: lessonsWithAttendance };
   }
 
   // Get completed lessons
@@ -626,7 +834,87 @@ export class LessonService {
       relations: ['teacher', 'students'],
       order: { scheduledDate: 'DESC' }
     });
+
+    // Add attendance history to each lesson (filtered by current occurrence date)
+    const lessonsWithAttendance = await Promise.all(
+      lessons.map(async (lesson) => {
+        // Get the start and end of the lesson's scheduled date
+        const lessonDate = new Date(lesson.scheduledDate);
+        const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+        const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+
+        const attendance = await this.attendanceRepository.find({
+          where: { 
+            lessonId: lesson.id,
+            createdAt: Between(startOfDay, endOfDay)
+          },
+          relations: ['student'],
+          order: { createdAt: 'ASC' }
+        });
+
+        return {
+          ...lesson,
+          attendanceHistory: attendance
+        };
+      })
+    );
     
-    return { lessons };
+    return { lessons: lessonsWithAttendance };
+  }
+
+  // Get teacher's today lessons
+  async getTeacherTodayLessons(
+    teacherId: string,
+    subject?: string,
+    status?: LessonStatus
+  ): Promise<{ lessons: Lesson[] }> {
+    // Get today's date range
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+
+    // Build where clause dynamically
+    const whereClause: any = {
+      teacherId: teacherId,
+      scheduledDate: Between(startOfDay, endOfDay),
+    };
+    if (subject) {
+      whereClause.subject = subject;
+    }
+    if (status) {
+      whereClause.status = status;
+    }
+
+    const lessons = await this.lessonRepository.find({
+      where: whereClause,
+      relations: ['teacher', 'students'],
+      order: { startTime: 'ASC' },
+    });
+
+    // Add attendance history to each lesson (filtered by current occurrence date)
+    const lessonsWithAttendance = await Promise.all(
+      lessons.map(async (lesson) => {
+        // Get the start and end of the lesson's scheduled date
+        const lessonDate = new Date(lesson.scheduledDate);
+        const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+        const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+
+        const attendance = await this.attendanceRepository.find({
+          where: { 
+            lessonId: lesson.id,
+            createdAt: Between(startOfDay, endOfDay)
+          },
+          relations: ['student'],
+          order: { createdAt: 'ASC' }
+        });
+
+        return {
+          ...lesson,
+          attendanceHistory: attendance
+        };
+      })
+    );
+
+    return { lessons: lessonsWithAttendance };
   }
 } 

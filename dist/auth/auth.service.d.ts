@@ -12,6 +12,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { TeacherService } from 'src/user/teacher/teacher.service';
 import { StudentService } from 'src/user/student/student.service';
 import { CreateStudentDto } from 'src/user/student/create-student.dto';
+import { AssistantService } from 'src/user/assistant/assistant.service';
 export declare class AuthService {
     private readonly jwtService;
     private readonly userService;
@@ -21,7 +22,8 @@ export declare class AuthService {
     private readonly googleAuthService;
     private readonly teacherService;
     private readonly studentService;
-    constructor(jwtService: JwtService, userService: UserService, configService: ConfigService, cloudinary: CloudinaryService, mailService: MailService, googleAuthService: AuthGoogleService, teacherService: TeacherService, studentService: StudentService);
+    private readonly assistantService;
+    constructor(jwtService: JwtService, userService: UserService, configService: ConfigService, cloudinary: CloudinaryService, mailService: MailService, googleAuthService: AuthGoogleService, teacherService: TeacherService, studentService: StudentService, assistantService: AssistantService);
     signIn(signInDto: SignInDto): Promise<{
         accessToken: string;
         user: User;

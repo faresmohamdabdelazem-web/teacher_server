@@ -58,6 +58,8 @@ export declare class UserController {
             lastName: string;
             phoneNumber: string;
             parentPhoneNumber: string;
+            createdAt: Date;
+            updatedAt: Date;
         };
     }>;
     createTeacherByAdmin(createTeacherData: CreateUserDto): Promise<{

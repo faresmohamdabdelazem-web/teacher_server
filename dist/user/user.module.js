@@ -19,6 +19,7 @@ const teacher_entity_1 = require("./teacher/teacher.entity");
 const student_entity_1 = require("./student/student.entity");
 const assistant_entity_1 = require("./assistant/assistant.entity");
 const lesson_entity_1 = require("../lesson/entities/lesson.entity");
+const lesson_attendance_entity_1 = require("../lesson/entities/lesson-attendance.entity");
 const teacher_service_1 = require("./teacher/teacher.service");
 const student_service_1 = require("./student/student.service");
 const assistant_service_1 = require("./assistant/assistant.service");
@@ -37,6 +38,7 @@ exports.UserModule = UserModule = __decorate([
                 student_entity_1.Student,
                 assistant_entity_1.Assistant,
                 lesson_entity_1.Lesson,
+                lesson_attendance_entity_1.LessonAttendance,
             ]),
             cloudinary_module_1.CloudinaryModule,
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),

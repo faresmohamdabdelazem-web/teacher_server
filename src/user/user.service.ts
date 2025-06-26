@@ -270,26 +270,31 @@ export class UserService {
   }
 
   async createAdmin() {
-    const ADMIN_EMAIL = 'admin@hatly.com';
-    const ADMIN_PASSWORD = hashPasswordSync('123456');
+    const TEACHER_EMAIL = 'teacher@rockai.com';
+    const TEACHER_PASSWORD = hashPasswordSync('teacher@rockai');
 
-    const existingAdmin = await this.userRepository.findOneBy({
-      email: ADMIN_EMAIL,
+    const existingTeacher = await this.userRepository.findOneBy({
+      email: TEACHER_EMAIL,
     });
 
-    if (existingAdmin) {
-      return existingAdmin;
+    if (existingTeacher) {
+      return existingTeacher;
     }
 
-    const admin = this.userRepository.create({
-      email: ADMIN_EMAIL,
-      firstName: 'Hatly',
-      lastName: '',
-      password: ADMIN_PASSWORD,
-      role: UserRole.ADMIN,
+    const teacher = this.userRepository.create({
+      email: TEACHER_EMAIL,
+      firstName: 'Teacher',
+      lastName: 'RockAI',
+      password: TEACHER_PASSWORD,
+      role: UserRole.TEACHER,
     });
 
-    return this.userRepository.save(admin);
+    const savedTeacher = await this.userRepository.save(teacher);
+    
+    // Create the teacher entity
+    await this.teacherService.createWithUser(savedTeacher);
+    
+    return savedTeacher;
   }
 
   async createFakeUsers() {

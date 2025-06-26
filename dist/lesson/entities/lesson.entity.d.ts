@@ -32,4 +32,6 @@ export declare class Lesson {
     teacherId: string;
     teacher: Teacher;
     students: Student[];
+    price: number;
+    grade?: string;
 }

@@ -22,12 +22,14 @@ const class_validator_1 = require("class-validator");
 const lesson_entity_1 = require("../../lesson/entities/lesson.entity");
 const user_entity_1 = require("../../user/entities/user.entity");
 const user_role_enum_1 = require("../user.role.enum");
+const lesson_attendance_entity_1 = require("../../lesson/entities/lesson-attendance.entity");
 let TeacherService = class TeacherService {
-    constructor(teacherRepository, studentRepository, lessonRepository, userRepository) {
+    constructor(teacherRepository, studentRepository, lessonRepository, userRepository, attendanceRepository) {
         this.teacherRepository = teacherRepository;
         this.studentRepository = studentRepository;
         this.lessonRepository = lessonRepository;
         this.userRepository = userRepository;
+        this.attendanceRepository = attendanceRepository;
     }
     async create(createTeacherDto, user) {
         const teacher = this.teacherRepository.create({ id: user.userId, user });
@@ -92,15 +94,47 @@ let TeacherService = class TeacherService {
         }
         const lessons = await this.lessonRepository.find({
             where: { teacher: { id: userId } },
-            relations: ['teacher'],
+            relations: ['teacher', 'students'],
         });
+        const lessonsWithAttendance = await Promise.all(lessons.map(async (lesson) => {
+            const lessonDate = new Date(lesson.scheduledDate);
+            const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+            const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+            const attendance = await this.attendanceRepository.find({
+                where: {
+                    lessonId: lesson.id,
+                    createdAt: (0, typeorm_2.Between)(startOfDay, endOfDay)
+                },
+                relations: ['student'],
+                order: { createdAt: 'ASC' }
+            });
+            return {
+                ...lesson,
+                attendanceHistory: attendance
+            };
+        }));
         return {
-            lessons,
+            lessons: lessonsWithAttendance,
         };
     }
     async createWithUser(user) {
         const teacher = this.teacherRepository.create({ id: user.userId, user });
         return await this.teacherRepository.save(teacher);
+    }
+    async addStudentToTeacher(teacherId, studentId) {
+        const teacher = await this.teacherRepository.findOne({
+            where: { id: teacherId },
+            relations: ['students'],
+        });
+        if (!teacher)
+            throw new common_1.NotFoundException('Teacher not found');
+        const student = await this.studentRepository.findOne({ where: { id: studentId } });
+        if (!student)
+            throw new common_1.NotFoundException('Student not found');
+        if (!teacher.students.some(s => s.id === studentId)) {
+            teacher.students.push(student);
+            await this.teacherRepository.save(teacher);
+        }
     }
 };
 exports.TeacherService = TeacherService;
@@ -110,7 +144,9 @@ exports.TeacherService = TeacherService = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(student_entity_1.Student)),
     __param(2, (0, typeorm_1.InjectRepository)(lesson_entity_1.Lesson)),
     __param(3, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __param(4, (0, typeorm_1.InjectRepository)(lesson_attendance_entity_1.LessonAttendance)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository])

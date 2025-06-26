@@ -13,6 +13,7 @@ import {
 import { Lesson } from '../../lesson/entities/lesson.entity';
 import { Student } from '../student/student.entity';
 import { User } from '../entities/user.entity';
+import { Assistant } from '../assistant/assistant.entity';
 
 @Entity('teachers')
 export class Teacher {
@@ -39,4 +40,7 @@ export class Teacher {
     inverseJoinColumn: { name: 'studentId', referencedColumnName: 'id' },
   })
   students: Student[];
+
+  @OneToMany(() => Assistant, (assistant) => assistant.teacher)
+  assistants: Assistant[];
 } 

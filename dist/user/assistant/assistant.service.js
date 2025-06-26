@@ -21,9 +21,33 @@ let AssistantService = class AssistantService {
     constructor(assistantRepository) {
         this.assistantRepository = assistantRepository;
     }
-    async createWithUser(user) {
-        const assistant = this.assistantRepository.create({ userId: user.userId, user });
+    async createWithUser(user, teacherId) {
+        const assistant = this.assistantRepository.create({
+            userId: user.userId,
+            user,
+            teacherId: teacherId || null
+        });
         return await this.assistantRepository.save(assistant);
+    }
+    async createWithUserAndTeacher(user, teacherId) {
+        const assistant = this.assistantRepository.create({
+            userId: user.userId,
+            user,
+            teacherId
+        });
+        return await this.assistantRepository.save(assistant);
+    }
+    async findByTeacher(teacherId) {
+        return await this.assistantRepository.find({
+            where: { teacherId },
+            relations: ['user'],
+        });
+    }
+    async findByUserId(userId) {
+        return await this.assistantRepository.findOne({
+            where: { userId },
+            relations: ['user', 'teacher'],
+        });
     }
 };
 exports.AssistantService = AssistantService;

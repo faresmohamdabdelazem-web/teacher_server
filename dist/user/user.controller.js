@@ -65,14 +65,20 @@ let UserController = class UserController {
             phoneNumber: createStudentData.phoneNumber,
             parentPhoneNumber: createStudentData.parentPhoneNumber,
         });
+        const assistant = await this.assistantService.findByUserId(currentUser.userId);
+        if (assistant && assistant.teacherId) {
+            await this.teacherService.addStudentToTeacher(assistant.teacherId, student.id);
+        }
         return {
             message: 'Student created successfully by assistant',
             student: {
                 id: student.id,
-                firstName: student.user.firstName,
-                lastName: student.user.lastName,
-                phoneNumber: student.user.phone,
+                firstName: student.firstName,
+                lastName: student.lastName,
+                phoneNumber: student.phoneNumber,
                 parentPhoneNumber: student.parentPhoneNumber,
+                createdAt: student.createdAt,
+                updatedAt: student.updatedAt,
             },
         };
     }

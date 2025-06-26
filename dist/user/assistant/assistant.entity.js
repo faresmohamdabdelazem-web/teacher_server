@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Assistant = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../entities/user.entity");
+const teacher_entity_1 = require("../teacher/teacher.entity");
 let Assistant = class Assistant {
 };
 exports.Assistant = Assistant;
@@ -24,6 +25,15 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'userId' }),
     __metadata("design:type", user_entity_1.User)
 ], Assistant.prototype, "user", void 0);
+__decorate([
+    (0, typeorm_1.Column)('uuid', { nullable: true }),
+    __metadata("design:type", String)
+], Assistant.prototype, "teacherId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => teacher_entity_1.Teacher, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'teacherId' }),
+    __metadata("design:type", teacher_entity_1.Teacher)
+], Assistant.prototype, "teacher", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

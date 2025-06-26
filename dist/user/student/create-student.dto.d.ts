@@ -4,5 +4,6 @@ export declare class CreateStudentDto {
     email?: string;
     phoneNumber?: string;
     parentPhoneNumber?: string;
+    grade?: string;
     id?: string;
 }

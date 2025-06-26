@@ -1,5 +1,5 @@
 import { Repository } from 'typeorm';
-import { Lesson } from './entities/lesson.entity';
+import { Lesson, LessonStatus } from './entities/lesson.entity';
 import { LessonAttendance } from './entities/lesson-attendance.entity';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { SubscribeLessonDto } from './dto/subscribe-lesson.dto';
@@ -40,7 +40,8 @@ export declare class LessonService {
         lessons: Lesson[];
     }>;
     addStudentToLesson(lessonId: string, studentId: string, userId: string, userRole: string): Promise<{
-        lesson: Lesson;
+        lessonId: string;
+        studentId: string;
     }>;
     removeStudentFromLesson(lessonId: string, studentId: string, userId: string, userRole: string): Promise<{
         lesson: Lesson;
@@ -61,8 +62,16 @@ export declare class LessonService {
     startAttendance(startAttendanceDto: StartAttendanceDto, userId: string, userRole: string): Promise<{
         lesson: Lesson;
     }>;
-    markAttendance(markAttendanceDto: MarkAttendanceDto, userId: string, userRole: string): Promise<LessonAttendance>;
+    markAttendance(markAttendanceDto: MarkAttendanceDto, userId: string, userRole: string): Promise<{
+        attendance: LessonAttendance;
+    }>;
     getLessonAttendance(lessonId: string): Promise<{
+        attendance: LessonAttendance[];
+    }>;
+    getLessonAttendanceHistory(lessonId: string, startDate: string, endDate: string): Promise<{
+        attendance: LessonAttendance[];
+    }>;
+    getLessonAttendanceForDate(lessonId: string, date: string): Promise<{
         attendance: LessonAttendance[];
     }>;
     getStudentAttendanceHistory(studentId: string): Promise<{
@@ -74,7 +83,6 @@ export declare class LessonService {
     completeLesson(lessonId: string, userId: string, userRole: string): Promise<{
         lesson: Lesson;
     }>;
-    private scheduleNextOccurrence;
     private calculateNextOccurrence;
     reopenLesson(lessonId: string, userId: string, userRole: string): Promise<{
         lesson: Lesson;
@@ -83,6 +91,9 @@ export declare class LessonService {
         lessons: Lesson[];
     }>;
     getCompletedLessons(): Promise<{
+        lessons: Lesson[];
+    }>;
+    getTeacherTodayLessons(teacherId: string, subject?: string, status?: LessonStatus): Promise<{
         lessons: Lesson[];
     }>;
 }

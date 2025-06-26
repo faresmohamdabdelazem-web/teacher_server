@@ -29,8 +29,8 @@ let StudentController = class StudentController {
     findOne(id) {
         return this.studentService.findOne(id);
     }
-    findByEmail(email) {
-        return this.studentService.findByEmail(email);
+    findByPhoneNumber(phoneNumber) {
+        return this.studentService.findByPhoneNumber(phoneNumber);
     }
     update(id, updateStudentDto) {
         return this.studentService.update(id, updateStudentDto);
@@ -67,12 +67,12 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], StudentController.prototype, "findOne", null);
 __decorate([
-    (0, common_1.Get)('email/:email'),
-    __param(0, (0, common_1.Param)('email')),
+    (0, common_1.Get)('phoneNumber/:phoneNumber'),
+    __param(0, (0, common_1.Param)('phoneNumber')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
-], StudentController.prototype, "findByEmail", null);
+], StudentController.prototype, "findByPhoneNumber", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),

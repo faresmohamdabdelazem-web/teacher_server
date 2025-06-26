@@ -57,9 +57,6 @@ export class AuthController {
   @Post('/check')
   @HttpCode(HttpStatus.OK)
   async check(@Body() body: CheckJwtDto, @Req() req: Request) {
-    if (!req.cookies.refreshToken) {
-      throw new UnauthorizedException('Refresh not found');
-    }
 
     return this.authService.checkAccessToken(body.token);
   }

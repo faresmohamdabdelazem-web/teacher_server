@@ -26,8 +26,9 @@ const user_role_enum_1 = require("../user/user.role.enum");
 const cloudinary_service_1 = require("../cloudinary/cloudinary.service");
 const teacher_service_1 = require("../user/teacher/teacher.service");
 const student_service_1 = require("../user/student/student.service");
+const assistant_service_1 = require("../user/assistant/assistant.service");
 let AuthService = class AuthService {
-    constructor(jwtService, userService, configService, cloudinary, mailService, googleAuthService, teacherService, studentService) {
+    constructor(jwtService, userService, configService, cloudinary, mailService, googleAuthService, teacherService, studentService, assistantService) {
         this.jwtService = jwtService;
         this.userService = userService;
         this.configService = configService;
@@ -36,6 +37,7 @@ let AuthService = class AuthService {
         this.googleAuthService = googleAuthService;
         this.teacherService = teacherService;
         this.studentService = studentService;
+        this.assistantService = assistantService;
     }
     async signIn(signInDto) {
         const { email, password } = signInDto;
@@ -108,7 +110,17 @@ let AuthService = class AuthService {
             if (!user) {
                 throw new common_1.UnauthorizedException('Invalid Token');
             }
-            return { status: true, user };
+            let userWithTeacherInfo = user;
+            if (user.role === user_role_enum_1.UserRole.ASSISTANT) {
+                const assistant = await this.assistantService.findByUserId(user.userId);
+                if (assistant) {
+                    userWithTeacherInfo = {
+                        ...user,
+                        teacherId: assistant.teacherId,
+                    };
+                }
+            }
+            return { status: true, user: userWithTeacherInfo };
         }
         catch (error) {
             throw new common_1.UnauthorizedException('Invalid Token');
@@ -150,8 +162,14 @@ let AuthService = class AuthService {
         const randomNumber = (0, crypto_1.randomInt)(0, 9999);
         return randomNumber.toString().padStart(4, '0');
     }
-    generateAccessToken(user) {
-        const payload = { userId: user.userId, role: user.role, email: user.email };
+    async generateAccessToken(user) {
+        let payload = { userId: user.userId, role: user.role, email: user.email };
+        if (user.role === user_role_enum_1.UserRole.ASSISTANT) {
+            const assistant = await this.assistantService.findByUserId(user.userId);
+            if (assistant) {
+                payload.teacherId = assistant.teacherId;
+            }
+        }
         const accessToken = this.jwtService.sign(payload, {
             secret: this.configService.get('ACCESS_TOKEN_SECRET'),
             expiresIn: this.configService.get('ACCESS_TOKEN_EXPIRES_IN'),
@@ -162,10 +180,20 @@ let AuthService = class AuthService {
         return token.split('.')[2];
     }
     async generateAndStoreTokens(user) {
-        const accessToken = this.generateAccessToken(user);
+        const accessToken = await this.generateAccessToken(user);
+        let userWithTeacherInfo = user;
+        if (user.role === user_role_enum_1.UserRole.ASSISTANT) {
+            const assistant = await this.assistantService.findByUserId(user.userId);
+            if (assistant) {
+                userWithTeacherInfo = {
+                    ...user,
+                    teacherId: assistant.teacherId,
+                };
+            }
+        }
         return {
             accessToken,
-            user,
+            user: userWithTeacherInfo,
         };
     }
     async createStudentByAssistant(createStudentDto, id) {
@@ -183,9 +211,9 @@ let AuthService = class AuthService {
             message: 'Student created successfully by assistant',
             student: {
                 id: student.id,
-                firstName: student.user.firstName,
-                lastName: student.user.lastName,
-                phoneNumber: student.user.phone,
+                firstName: student.firstName,
+                lastName: student.lastName,
+                phoneNumber: student.phoneNumber,
                 parentPhoneNumber: student.parentPhoneNumber,
             },
         };
@@ -202,6 +230,7 @@ exports.AuthService = AuthService = __decorate([
         mail_service_1.MailService,
         google_auth_service_1.AuthGoogleService,
         teacher_service_1.TeacherService,
-        student_service_1.StudentService])
+        student_service_1.StudentService,
+        assistant_service_1.AssistantService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

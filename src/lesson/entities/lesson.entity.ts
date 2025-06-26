@@ -96,4 +96,10 @@ export class Lesson {
   students: Student[];
 
   // Removed assistants relation
+
+  @Column({ type: 'decimal', nullable: true })
+  price: number;
+
+  @Column({ nullable: true })
+  grade?: string;
 } 

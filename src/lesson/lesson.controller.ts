@@ -23,6 +23,7 @@ import { RoleGuard } from 'src/auth/guard/role.guard';
 import { UserRole } from 'src/user/user.role.enum';
 import { Roles } from 'src/decorators/role.decorator';
 import { GetSignedUser } from 'src/decorators/get.signed.user.decorator';
+import { LessonStatus } from './entities/lesson.entity';
 
 @Controller('lessons')
 export class LessonController {
@@ -110,8 +111,14 @@ export class LessonController {
   @Get(':id/attendance')
   @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.TEACHER, UserRole.ASSISTANT, UserRole.ADMIN)
-  getLessonAttendance(@Param('id') lessonId: string) {
-    return this.lessonService.getLessonAttendance(lessonId);
+  getLessonAttendance(
+    @Param('id') id: string,
+    @Query('date') date?: string,
+  ) {
+    if (date) {
+      return this.lessonService.getLessonAttendanceForDate(id, date);
+    }
+    return this.lessonService.getLessonAttendance(id);
   }
 
   @Get('student/:studentId/attendance-history')
@@ -243,5 +250,16 @@ export class LessonController {
     @Param('lessonId') lessonId: string,
   ) {
     return this.lessonService.checkStudentSubscription(studentId, lessonId);
+  }
+
+  @Get('teacher/:teacherId/today')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.ASSISTANT)
+  getTeacherTodayLessons(
+    @Param('teacherId') teacherId: string,
+    @Query('subject') subject?: string,
+    @Query('status') status?: LessonStatus,
+  ) {
+    return this.lessonService.getTeacherTodayLessons(teacherId, subject, status);
   }
 } 

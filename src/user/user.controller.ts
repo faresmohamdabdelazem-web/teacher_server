@@ -96,7 +96,7 @@ export class UserController {
       throw new Error('Only assistants can create students');
     }
 
-    // Create the student entity without user account (no system access)
+    // Create the student entity
     const student = await this.studentService.create({
       firstName: createStudentData.firstName,
       lastName: createStudentData.lastName,
@@ -104,14 +104,22 @@ export class UserController {
       parentPhoneNumber: createStudentData.parentPhoneNumber,
     });
 
+    // Find the assistant entity and their teacher
+    const assistant = await this.assistantService.findByUserId(currentUser.userId);
+    if (assistant && assistant.teacherId) {
+      await this.teacherService.addStudentToTeacher(assistant.teacherId, student.id);
+    }
+
     return {
       message: 'Student created successfully by assistant',
       student: {
         id: student.id,
-        firstName: student.user.firstName,
-        lastName: student.user.lastName,
-        phoneNumber: student.user.phone,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        phoneNumber: student.phoneNumber,
         parentPhoneNumber: student.parentPhoneNumber,
+        createdAt: student.createdAt,
+        updatedAt: student.updatedAt,
       },
     };
   }

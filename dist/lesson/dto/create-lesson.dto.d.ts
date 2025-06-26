@@ -16,5 +16,7 @@ export declare class CreateLessonDto {
     recurrenceType?: LessonRecurrenceType;
     recurrencePattern?: RecurrencePattern;
     status?: LessonStatus;
+    price?: number;
+    grade?: string;
 }
 export {};

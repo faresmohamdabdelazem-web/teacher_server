@@ -25,6 +25,7 @@ const role_guard_1 = require("../auth/guard/role.guard");
 const user_role_enum_1 = require("../user/user.role.enum");
 const role_decorator_1 = require("../decorators/role.decorator");
 const get_signed_user_decorator_1 = require("../decorators/get.signed.user.decorator");
+const lesson_entity_1 = require("./entities/lesson.entity");
 let LessonController = class LessonController {
     constructor(lessonService) {
         this.lessonService = lessonService;
@@ -56,8 +57,11 @@ let LessonController = class LessonController {
     markAttendance(markAttendanceDto, user) {
         return this.lessonService.markAttendance(markAttendanceDto, user.id, user.role);
     }
-    getLessonAttendance(lessonId) {
-        return this.lessonService.getLessonAttendance(lessonId);
+    getLessonAttendance(id, date) {
+        if (date) {
+            return this.lessonService.getLessonAttendanceForDate(id, date);
+        }
+        return this.lessonService.getLessonAttendance(id);
     }
     getStudentAttendanceHistory(studentId) {
         return this.lessonService.getStudentAttendanceHistory(studentId);
@@ -97,6 +101,9 @@ let LessonController = class LessonController {
     }
     checkStudentSubscription(studentId, lessonId) {
         return this.lessonService.checkStudentSubscription(studentId, lessonId);
+    }
+    getTeacherTodayLessons(teacherId, subject, status) {
+        return this.lessonService.getTeacherTodayLessons(teacherId, subject, status);
     }
 };
 exports.LessonController = LessonController;
@@ -188,8 +195,9 @@ __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
     (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT, user_role_enum_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('date')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], LessonController.prototype, "getLessonAttendance", null);
 __decorate([
@@ -316,6 +324,17 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], LessonController.prototype, "checkStudentSubscription", null);
+__decorate([
+    (0, common_1.Get)('teacher/:teacherId/today'),
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.ADMIN, user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT),
+    __param(0, (0, common_1.Param)('teacherId')),
+    __param(1, (0, common_1.Query)('subject')),
+    __param(2, (0, common_1.Query)('status')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], LessonController.prototype, "getTeacherTodayLessons", null);
 exports.LessonController = LessonController = __decorate([
     (0, common_1.Controller)('lessons'),
     __metadata("design:paramtypes", [lesson_service_1.LessonService])

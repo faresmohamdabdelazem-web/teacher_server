@@ -33,6 +33,7 @@ import { extractPublicId } from 'src/shared/extract-public-id';
 import { TeacherService } from 'src/user/teacher/teacher.service';
 import { StudentService } from 'src/user/student/student.service';
 import { CreateStudentDto } from 'src/user/student/create-student.dto';
+import { AssistantService } from 'src/user/assistant/assistant.service';
 
 @Injectable()
 export class AuthService {
@@ -46,6 +47,7 @@ export class AuthService {
     private readonly googleAuthService: AuthGoogleService,
     private readonly teacherService: TeacherService,
     private readonly studentService: StudentService,
+    private readonly assistantService: AssistantService,
   ) {}
 
   async signIn(signInDto: SignInDto) {
@@ -139,7 +141,19 @@ export class AuthService {
         throw new UnauthorizedException('Invalid Token');
       }
 
-      return { status: true, user };
+      // If user is an assistant, get the teacher information
+      let userWithTeacherInfo = user;
+      if (user.role === UserRole.ASSISTANT) {
+        const assistant = await this.assistantService.findByUserId(user.userId);
+        if (assistant) {
+          userWithTeacherInfo = {
+            ...user,
+            teacherId: assistant.teacherId,
+          } as any;
+        }
+      }
+
+      return { status: true, user: userWithTeacherInfo };
     } catch (error) {
       throw new UnauthorizedException('Invalid Token');
     }
@@ -193,8 +207,16 @@ export class AuthService {
     return randomNumber.toString().padStart(4, '0');
   }
 
-  private generateAccessToken(user: User) {
-    const payload = { userId: user.userId, role: user.role, email: user.email };
+  private async generateAccessToken(user: User) {
+    let payload: any = { userId: user.userId, role: user.role, email: user.email };
+    
+    // If user is an assistant, include teacherId in payload
+    if (user.role === UserRole.ASSISTANT) {
+      const assistant = await this.assistantService.findByUserId(user.userId);
+      if (assistant) {
+        payload.teacherId = assistant.teacherId;
+      }
+    }
 
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
@@ -209,10 +231,23 @@ export class AuthService {
   }
 
   private async generateAndStoreTokens(user: User) {
-    const accessToken = this.generateAccessToken(user);
+    const accessToken = await this.generateAccessToken(user);
+    
+    // If user is an assistant, get the teacher information
+    let userWithTeacherInfo = user;
+    if (user.role === UserRole.ASSISTANT) {
+      const assistant = await this.assistantService.findByUserId(user.userId);
+      if (assistant) {
+        userWithTeacherInfo = {
+          ...user,
+          teacherId: assistant.teacherId,
+        } as any;
+      }
+    }
+    
     return {
       accessToken,
-      user,
+      user: userWithTeacherInfo,
     };
   }
 
@@ -236,9 +271,9 @@ export class AuthService {
       message: 'Student created successfully by assistant',
       student: {
         id: student.id,
-        firstName: student.user.firstName,
-        lastName: student.user.lastName,
-        phoneNumber: student.user.phone,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        phoneNumber: student.phoneNumber,
         parentPhoneNumber: student.parentPhoneNumber,
       },
     };

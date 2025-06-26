@@ -57,4 +57,12 @@ export class CreateLessonDto {
   @IsOptional()
   @IsEnum(LessonStatus)
   status?: LessonStatus;
+
+  @IsOptional()
+  @IsNumber()
+  price?: number;
+
+  @IsOptional()
+  @IsString()
+  grade?: string;
 } 

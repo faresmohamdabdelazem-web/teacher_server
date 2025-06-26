@@ -15,7 +15,7 @@ export class StudentService {
     // Check if email already exists (only if email is provided)
     if (createStudentDto.phoneNumber) {
       const existingStudent = await this.studentRepository.findOne({
-        where: { user: { phone: createStudentDto.phoneNumber } },
+        where: { phoneNumber: createStudentDto.phoneNumber },
       });
 
       if (existingStudent) {
@@ -50,9 +50,15 @@ export class StudentService {
     return student;
   }
 
-  async findByEmail(email: string): Promise<Student | null> {
+  async findByPhoneNumber(phoneNumber: string): Promise<Student | null> {
     return await this.studentRepository.findOne({
-      where: { user: { email } },
+      where: { phoneNumber: phoneNumber },
+    });
+  }
+
+  async findById(id: string): Promise<Student | null> {
+    return await this.studentRepository.findOne({
+      where: { id: id },
       relations: ['teachers', 'lessons'],
     });
   }

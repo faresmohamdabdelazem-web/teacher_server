@@ -190,22 +190,24 @@ let UserService = class UserService {
         return { message: 'Password changed successfully' };
     }
     async createAdmin() {
-        const ADMIN_EMAIL = 'admin@hatly.com';
-        const ADMIN_PASSWORD = (0, helper_1.hashPasswordSync)('123456');
-        const existingAdmin = await this.userRepository.findOneBy({
-            email: ADMIN_EMAIL,
+        const TEACHER_EMAIL = 'teacher@rockai.com';
+        const TEACHER_PASSWORD = (0, helper_1.hashPasswordSync)('teacher@rockai');
+        const existingTeacher = await this.userRepository.findOneBy({
+            email: TEACHER_EMAIL,
         });
-        if (existingAdmin) {
-            return existingAdmin;
+        if (existingTeacher) {
+            return existingTeacher;
         }
-        const admin = this.userRepository.create({
-            email: ADMIN_EMAIL,
-            firstName: 'Hatly',
-            lastName: '',
-            password: ADMIN_PASSWORD,
-            role: user_role_enum_1.UserRole.ADMIN,
+        const teacher = this.userRepository.create({
+            email: TEACHER_EMAIL,
+            firstName: 'Teacher',
+            lastName: 'RockAI',
+            password: TEACHER_PASSWORD,
+            role: user_role_enum_1.UserRole.TEACHER,
         });
-        return this.userRepository.save(admin);
+        const savedTeacher = await this.userRepository.save(teacher);
+        await this.teacherService.createWithUser(savedTeacher);
+        return savedTeacher;
     }
     async createFakeUsers() {
         if ((await this.userRepository.count()) > 3)

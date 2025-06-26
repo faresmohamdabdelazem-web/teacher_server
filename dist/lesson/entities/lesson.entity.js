@@ -112,6 +112,14 @@ __decorate([
     }),
     __metadata("design:type", Array)
 ], Lesson.prototype, "students", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', nullable: true }),
+    __metadata("design:type", Number)
+], Lesson.prototype, "price", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Lesson.prototype, "grade", void 0);
 exports.Lesson = Lesson = __decorate([
     (0, typeorm_1.Entity)('lessons')
 ], Lesson);

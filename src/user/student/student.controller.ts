@@ -30,9 +30,9 @@ export class StudentController {
     return this.studentService.findOne(id);
   }
 
-  @Get('email/:email')
-  findByEmail(@Param('email') email: string) {
-    return this.studentService.findByEmail(email);
+  @Get('phoneNumber/:phoneNumber')
+  findByPhoneNumber(@Param('phoneNumber') phoneNumber: string) {
+    return this.studentService.findByPhoneNumber(phoneNumber);
   }
 
   @Patch(':id')

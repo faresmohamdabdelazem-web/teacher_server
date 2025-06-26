@@ -13,23 +13,33 @@ exports.Student = void 0;
 const typeorm_1 = require("typeorm");
 const teacher_entity_1 = require("../teacher/teacher.entity");
 const lesson_entity_1 = require("../../lesson/entities/lesson.entity");
-const user_entity_1 = require("../entities/user.entity");
 let Student = class Student {
 };
 exports.Student = Student;
 __decorate([
-    (0, typeorm_1.PrimaryColumn)('uuid'),
+    (0, typeorm_1.PrimaryGeneratedColumn)('uuid'),
     __metadata("design:type", String)
 ], Student.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.OneToOne)(() => user_entity_1.User, { nullable: true }),
-    (0, typeorm_1.JoinColumn)({ name: 'id' }),
-    __metadata("design:type", user_entity_1.User)
-], Student.prototype, "user", void 0);
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", String)
+], Student.prototype, "firstName", void 0);
+__decorate([
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", String)
+], Student.prototype, "lastName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Student.prototype, "phoneNumber", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], Student.prototype, "parentPhoneNumber", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Student.prototype, "grade", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

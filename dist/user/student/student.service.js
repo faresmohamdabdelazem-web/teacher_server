@@ -24,7 +24,7 @@ let StudentService = class StudentService {
     async create(createStudentDto) {
         if (createStudentDto.phoneNumber) {
             const existingStudent = await this.studentRepository.findOne({
-                where: { user: { phone: createStudentDto.phoneNumber } },
+                where: { phoneNumber: createStudentDto.phoneNumber },
             });
             if (existingStudent) {
                 throw new common_1.ConflictException('Student with this phone number already exists');
@@ -52,9 +52,14 @@ let StudentService = class StudentService {
         }
         return student;
     }
-    async findByEmail(email) {
+    async findByPhoneNumber(phoneNumber) {
         return await this.studentRepository.findOne({
-            where: { user: { email } },
+            where: { phoneNumber: phoneNumber },
+        });
+    }
+    async findById(id) {
+        return await this.studentRepository.findOne({
+            where: { id: id },
             relations: ['teachers', 'lessons'],
         });
     }

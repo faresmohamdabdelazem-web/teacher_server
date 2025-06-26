@@ -37,9 +37,6 @@ let AuthController = class AuthController {
         return this.authService.sendForgetPassEmail(sendEmailDto);
     }
     async check(body, req) {
-        if (!req.cookies.refreshToken) {
-            throw new common_1.UnauthorizedException('Refresh not found');
-        }
         return this.authService.checkAccessToken(body.token);
     }
     resetPassword(resetPasswordDto) {

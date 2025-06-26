@@ -9,7 +9,8 @@ export declare class StudentService {
         students: Student[];
     }>;
     findOne(id: string): Promise<Student>;
-    findByEmail(email: string): Promise<Student | null>;
+    findByPhoneNumber(phoneNumber: string): Promise<Student | null>;
+    findById(id: string): Promise<Student | null>;
     update(id: string, updateStudentDto: Partial<CreateStudentDto>): Promise<Student>;
     remove(id: string): Promise<void>;
     getStudentTeachers(id: string): Promise<{

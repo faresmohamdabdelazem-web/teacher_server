@@ -10,6 +10,7 @@ import { Teacher } from './teacher/teacher.entity';
 import { Student } from './student/student.entity';
 import { Assistant } from './assistant/assistant.entity';
 import { Lesson } from '../lesson/entities/lesson.entity';
+import { LessonAttendance } from '../lesson/entities/lesson-attendance.entity';
 import { TeacherService } from './teacher/teacher.service';
 import { StudentService } from './student/student.service';
 import { AssistantService } from './assistant/assistant.service';
@@ -25,6 +26,7 @@ import { AuthModule } from 'src/auth/auth.module';
       Student,
       Assistant,
       Lesson,
+      LessonAttendance,
     ]),
     CloudinaryModule,
     forwardRef(() => AuthModule),

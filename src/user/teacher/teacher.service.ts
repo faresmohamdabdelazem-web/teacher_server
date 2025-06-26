@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { Teacher } from './teacher.entity';
 import { Student } from '../student/student.entity';
 import { CreateTeacherDto } from './create-teacher.dto';
@@ -9,6 +9,7 @@ import { isUUID } from 'class-validator';
 import { Lesson } from '../../lesson/entities/lesson.entity';
 import { User } from '../../user/entities/user.entity';
 import { UserRole } from '../user.role.enum';
+import { LessonAttendance } from '../../lesson/entities/lesson-attendance.entity';
 
 @Injectable()
 export class TeacherService {
@@ -21,6 +22,8 @@ export class TeacherService {
     private lessonRepository: Repository<Lesson>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(LessonAttendance)
+    private attendanceRepository: Repository<LessonAttendance>,
   ) { }
 
   async create(createTeacherDto: CreateTeacherDto, user: User): Promise<Teacher> {
@@ -99,18 +102,60 @@ export class TeacherService {
     if (!teacher) {
       throw new NotFoundException('Teacher not found');
     }
+    
     const lessons = await this.lessonRepository.find({
       where: { teacher: { id: userId } },
-      relations: ['teacher'],
+      relations: ['teacher', 'students'],
     });
 
+    // Add attendance history to each lesson (filtered by current occurrence date)
+    const lessonsWithAttendance = await Promise.all(
+      lessons.map(async (lesson) => {
+        // Get the start and end of the lesson's scheduled date
+        const lessonDate = new Date(lesson.scheduledDate);
+        const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+        const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+
+        const attendance = await this.attendanceRepository.find({
+          where: { 
+            lessonId: lesson.id,
+            createdAt: Between(startOfDay, endOfDay)
+          },
+          relations: ['student'],
+          order: { createdAt: 'ASC' }
+        });
+
+        return {
+          ...lesson,
+          attendanceHistory: attendance
+        };
+      })
+    );
+
     return {
-      lessons,
+      lessons: lessonsWithAttendance,
     };
   }
 
   async createWithUser(user: User) {
     const teacher = this.teacherRepository.create({ id: user.userId, user });
     return await this.teacherRepository.save(teacher);
+  }
+
+  async addStudentToTeacher(teacherId: string, studentId: string): Promise<void> {
+    const teacher = await this.teacherRepository.findOne({
+      where: { id: teacherId },
+      relations: ['students'],
+    });
+    if (!teacher) throw new NotFoundException('Teacher not found');
+
+    const student = await this.studentRepository.findOne({ where: { id: studentId } });
+    if (!student) throw new NotFoundException('Student not found');
+
+    // Avoid duplicates
+    if (!teacher.students.some(s => s.id === studentId)) {
+      teacher.students.push(student);
+      await this.teacherRepository.save(teacher);
+    }
   }
 } 
