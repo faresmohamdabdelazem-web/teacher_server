@@ -17,7 +17,7 @@ export declare class TeacherController {
     }>;
     findOne(id: string): Promise<import("./teacher.entity").Teacher>;
     getTeacherStudents(id: string): Promise<{
-        students: import("../student/student.entity").Student[];
+        students: any[];
     }>;
     getTeacherLessons(id: string): Promise<{
         lessons: import("../../lesson/entities/lesson.entity").Lesson[];

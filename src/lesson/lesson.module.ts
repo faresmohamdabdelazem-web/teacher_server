@@ -1,20 +1,24 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { LessonController } from './lesson.controller';
+import { LessonService } from './lesson.service';
 import { Lesson } from './entities/lesson.entity';
 import { LessonAttendance } from './entities/lesson-attendance.entity';
+import { TeacherStats } from './entities/teacher-stats.entity';
+import { TeacherStatsService } from './teacher-stats.service';
 import { Teacher } from '../user/teacher/teacher.entity';
 import { Student } from '../user/student/student.entity';
-import { LessonService } from './lesson.service';
-import { LessonController } from './lesson.controller';
 import { UserModule } from '../user/user.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Lesson, LessonAttendance, Teacher, Student]),
+    TypeOrmModule.forFeature([Lesson, LessonAttendance, Teacher, Student, TeacherStats]),
     UserModule,
+    NotificationModule,
   ],
   controllers: [LessonController],
-  providers: [LessonService],
-  exports: [TypeOrmModule, LessonService],
+  providers: [LessonService, TeacherStatsService],
+  exports: [LessonService, TeacherStatsService],
 })
 export class LessonModule {} 

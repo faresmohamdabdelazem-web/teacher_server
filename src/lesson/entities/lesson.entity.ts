@@ -28,6 +28,11 @@ export enum LessonStatus {
   EXPIRED = 'expired',
 }
 
+export enum PricingType {
+  PER_LESSON = 'per_lesson',
+  MONTHLY = 'monthly',
+}
+
 @Entity('lessons')
 export class Lesson {
   @PrimaryGeneratedColumn('uuid')
@@ -42,7 +47,7 @@ export class Lesson {
   @Column()
   subject: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   scheduledDate: Date;
 
   @Column({ nullable: true })
@@ -72,7 +77,7 @@ export class Lesson {
     enum: LessonStatus, 
     default: LessonStatus.SCHEDULED 
   })
-  status: LessonStatus;inutes
+  status: LessonStatus;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -98,8 +103,15 @@ export class Lesson {
 
   // Removed assistants relation
 
-  @Column({ type: 'decimal', nullable: true })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   price: number;
+
+  @Column({ 
+    type: 'enum', 
+    enum: PricingType, 
+    default: PricingType.PER_LESSON 
+  })
+  pricingType: PricingType;
 
   @Column({ nullable: true })
   grade?: string;

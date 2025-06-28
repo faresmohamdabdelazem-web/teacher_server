@@ -16,6 +16,7 @@ import { SubscribeLessonDto } from './dto/subscribe-lesson.dto';
 import { UnsubscribeLessonDto } from './dto/unsubscribe-lesson.dto';
 import { AddStudentToLessonDto } from './dto/add-student-to-lesson.dto';
 import { RemoveStudentFromLessonDto } from './dto/remove-student-from-lesson.dto';
+import { TransferStudentDto } from './dto/transfer-student.dto';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import { StartAttendanceDto } from './dto/start-attendance.dto';
 import { AuthGuard } from 'src/auth/guard/auth.guard';
@@ -24,6 +25,7 @@ import { UserRole } from 'src/user/user.role.enum';
 import { Roles } from 'src/decorators/role.decorator';
 import { GetSignedUser } from 'src/decorators/get.signed.user.decorator';
 import { LessonStatus } from './entities/lesson.entity';
+import { TeacherStatsDto, StatsPeriod } from './dto/teacher-stats.dto';
 
 @Controller('lessons')
 export class LessonController {
@@ -65,6 +67,13 @@ export class LessonController {
   @Roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.ASSISTANT)
   getLessonsByDate(@Param('date') date: string) {
     return this.lessonService.getLessonsByDate(date);
+  }
+
+  @Get('today')
+  @UseGuards(AuthGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.ASSISTANT)
+  getTodayLessons(@Query('date') date?: string) {
+    return this.lessonService.getTodayLessons(date);
   }
 
   // @Get('grade/:grade')
@@ -142,7 +151,7 @@ export class LessonController {
     @Param('id') lessonId: string,
     @GetSignedUser() user: any,
   ) {
-    return this.lessonService.completeLesson(lessonId, user.id, user.role);
+    return this.lessonService.completeLesson(lessonId);
   }
 
   // Reopen a completed recurring lesson for the next occurrence
@@ -209,6 +218,21 @@ export class LessonController {
     );
   }
 
+  @Post('transfer-student')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.ASSISTANT, UserRole.TEACHER)
+  transferStudentToLesson(
+    @Body() transferStudentDto: TransferStudentDto,
+    @GetSignedUser() user: any,
+  ) {
+    return this.lessonService.transferStudentToLesson(
+      transferStudentDto.studentId,
+      transferStudentDto.toLessonId,
+      user.id,
+      user.role,
+    );
+  }
+
   @Post('remove-student')
   @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.ASSISTANT, UserRole.TEACHER)
@@ -256,7 +280,76 @@ export class LessonController {
     @Param('teacherId') teacherId: string,
     @Query('subject') subject?: string,
     @Query('status') status?: LessonStatus,
+    @Query('date') date?: string,
   ) {
-    return this.lessonService.getTeacherTodayLessons(teacherId, subject, status);
+    return this.lessonService.getTeacherTodayLessons(teacherId, subject, status, date);
+  }
+
+  @Get('teacher/:teacherId/stats')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.ASSISTANT)
+  getTeacherStats(
+    @Param('teacherId') teacherId: string,
+    @Query('period') period: StatsPeriod,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.lessonService.calculateTeacherStats(teacherId, period, startDate, endDate);
+  }
+
+  @Get('teacher/:teacherId/all-lessons')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.TEACHER, UserRole.ASSISTANT)
+  async getAllLessonsForTeacher(@Param('teacherId') teacherId: string): Promise<any> {
+    return await this.lessonService.getAllLessonsForTeacher(teacherId);
+  }
+
+  @Get('teacher/:teacherId/initialize-stats')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.TEACHER, UserRole.ASSISTANT)
+  async initializeTeacherStats(@Param('teacherId') teacherId: string): Promise<{ message: string }> {
+    await this.lessonService.initializeTeacherStats(teacherId);
+    return { message: 'Teacher stats initialized successfully' };
+  }
+
+  @Get('teacher/:teacherId/recalculate-stats')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.TEACHER, UserRole.ASSISTANT)
+  async recalculateTeacherStats(@Param('teacherId') teacherId: string): Promise<{ message: string }> {
+    await this.lessonService.recalculateTeacherStats(teacherId);
+    return { message: 'Teacher stats recalculated successfully' };
+  }
+
+  @Get('teacher/:teacherId/reset-stats')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.TEACHER, UserRole.ASSISTANT)
+  async resetTeacherStats(@Param('teacherId') teacherId: string): Promise<{ message: string }> {
+    await this.lessonService.resetTeacherStats(teacherId);
+    return { message: 'Teacher stats reset and recalculated successfully' };
+  }
+
+  @Get('teacher/:teacherId/debug-lessons')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.TEACHER, UserRole.ASSISTANT)
+  async debugTeacherLessons(@Param('teacherId') teacherId: string): Promise<any> {
+    return await this.lessonService.debugTeacherLessons(teacherId);
+  }
+
+  @Get('teacher/:teacherId/stats-by-date')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.TEACHER, UserRole.ASSISTANT)
+  async getTeacherStatsByDate(
+    @Param('teacherId') teacherId: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string
+  ): Promise<any> {
+    return await this.lessonService.getTeacherStatsByDate(teacherId, startDate, endDate);
+  }
+
+  @Get('debug/:id')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.ASSISTANT)
+  debugLessonData(@Param('id') id: string) {
+    return this.lessonService.debugLessonData(id);
   }
 } 

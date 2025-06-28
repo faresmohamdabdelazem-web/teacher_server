@@ -6,16 +6,21 @@ import { SubscribeLessonDto } from './dto/subscribe-lesson.dto';
 import { UnsubscribeLessonDto } from './dto/unsubscribe-lesson.dto';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import { StartAttendanceDto } from './dto/start-attendance.dto';
+import { StatsPeriod, TeacherStatsResponse } from './dto/teacher-stats.dto';
 import { Teacher } from '../user/teacher/teacher.entity';
 import { Student } from '../user/student/student.entity';
 import { UserService } from '../user/user.service';
+import { TeacherStatsService } from './teacher-stats.service';
+import { WhatsAppService } from '../notification/whatsapp.service';
 export declare class LessonService {
     private lessonRepository;
     private attendanceRepository;
     private teacherRepository;
     private studentRepository;
     private readonly userService;
-    constructor(lessonRepository: Repository<Lesson>, attendanceRepository: Repository<LessonAttendance>, teacherRepository: Repository<Teacher>, studentRepository: Repository<Student>, userService: UserService);
+    private readonly teacherStatsService;
+    private readonly whatsAppService;
+    constructor(lessonRepository: Repository<Lesson>, attendanceRepository: Repository<LessonAttendance>, teacherRepository: Repository<Teacher>, studentRepository: Repository<Student>, userService: UserService, teacherStatsService: TeacherStatsService, whatsAppService: WhatsAppService);
     create(createLessonDto: CreateLessonDto, userId: string, userRole: string): Promise<{
         lesson: Lesson;
         teacher: Teacher;
@@ -44,6 +49,9 @@ export declare class LessonService {
         lessonId: string;
         studentId: string;
     }>;
+    transferStudentToLesson(studentId: string, toLessonId: string, userId: string, userRole: string): Promise<{
+        message: string;
+    }>;
     removeStudentFromLesson(lessonId: string, studentId: string, userId: string, userRole: string): Promise<{
         lesson: Lesson;
     }>;
@@ -58,6 +66,9 @@ export declare class LessonService {
     }>;
     checkStudentSubscription(studentId: string, lessonId: string): Promise<boolean>;
     getLessonsByDate(date: string): Promise<{
+        lessons: Lesson[];
+    }>;
+    getTodayLessons(date?: string): Promise<{
         lessons: Lesson[];
     }>;
     startAttendance(startAttendanceDto: StartAttendanceDto, userId: string, userRole: string): Promise<{
@@ -81,9 +92,8 @@ export declare class LessonService {
     startLesson(lessonId: string, userId: string, userRole: string): Promise<{
         lesson: Lesson;
     }>;
-    completeLesson(lessonId: string, userId: string, userRole: string): Promise<{
-        lesson: Lesson;
-    }>;
+    completeLesson(lessonId: string): Promise<any>;
+    private sendAbsenceNotifications;
     private calculateNextOccurrence;
     reopenLesson(lessonId: string, userId: string, userRole: string): Promise<{
         lesson: Lesson;
@@ -94,7 +104,19 @@ export declare class LessonService {
     getCompletedLessons(): Promise<{
         lessons: Lesson[];
     }>;
-    getTeacherTodayLessons(teacherId: string, subject?: string, status?: LessonStatus): Promise<{
+    getTeacherTodayLessons(teacherId: string, subject?: string, status?: LessonStatus, date?: string): Promise<{
         lessons: Lesson[];
     }>;
+    calculateTeacherStats(teacherId: string, period: StatsPeriod, startDate?: string, endDate?: string): Promise<TeacherStatsResponse>;
+    getAllTeacherLessons(teacherId: string): Promise<{
+        lessons: Lesson[];
+    }>;
+    initializeTeacherStats(teacherId: string): Promise<void>;
+    recalculateTeacherStats(teacherId: string): Promise<void>;
+    resetTeacherStats(teacherId: string): Promise<void>;
+    debugTeacherLessons(teacherId: string): Promise<any>;
+    getTeacherStatsByDate(teacherId: string, startDate: string, endDate: string): Promise<any>;
+    getAllLessonsForTeacher(teacherId: string): Promise<any>;
+    private markAbsentStudentsWithoutAttendance;
+    debugLessonData(lessonId: string): Promise<any>;
 }

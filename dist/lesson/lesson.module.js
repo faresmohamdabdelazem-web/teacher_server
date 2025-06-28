@@ -9,25 +9,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LessonModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
+const lesson_controller_1 = require("./lesson.controller");
+const lesson_service_1 = require("./lesson.service");
 const lesson_entity_1 = require("./entities/lesson.entity");
 const lesson_attendance_entity_1 = require("./entities/lesson-attendance.entity");
+const teacher_stats_entity_1 = require("./entities/teacher-stats.entity");
+const teacher_stats_service_1 = require("./teacher-stats.service");
 const teacher_entity_1 = require("../user/teacher/teacher.entity");
 const student_entity_1 = require("../user/student/student.entity");
-const lesson_service_1 = require("./lesson.service");
-const lesson_controller_1 = require("./lesson.controller");
 const user_module_1 = require("../user/user.module");
+const notification_module_1 = require("../notification/notification.module");
 let LessonModule = class LessonModule {
 };
 exports.LessonModule = LessonModule;
 exports.LessonModule = LessonModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([lesson_entity_1.Lesson, lesson_attendance_entity_1.LessonAttendance, teacher_entity_1.Teacher, student_entity_1.Student]),
+            typeorm_1.TypeOrmModule.forFeature([lesson_entity_1.Lesson, lesson_attendance_entity_1.LessonAttendance, teacher_entity_1.Teacher, student_entity_1.Student, teacher_stats_entity_1.TeacherStats]),
             user_module_1.UserModule,
+            notification_module_1.NotificationModule,
         ],
         controllers: [lesson_controller_1.LessonController],
-        providers: [lesson_service_1.LessonService],
-        exports: [typeorm_1.TypeOrmModule, lesson_service_1.LessonService],
+        providers: [lesson_service_1.LessonService, teacher_stats_service_1.TeacherStatsService],
+        exports: [lesson_service_1.LessonService, teacher_stats_service_1.TeacherStatsService],
     })
 ], LessonModule);
 //# sourceMappingURL=lesson.module.js.map

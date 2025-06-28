@@ -74,11 +74,33 @@ let TeacherService = class TeacherService {
         }
         const students = await this.studentRepository.find({
             where: { teachers: { id: userId } },
-            relations: ['teachers'],
+            relations: ['teachers', 'lessons'],
         });
-        console.log(students);
+        const studentsWithLessons = await Promise.all(students.map(async (student) => {
+            const lessonsWithAttendance = await Promise.all(student.lessons.map(async (lesson) => {
+                const lessonDate = new Date(lesson.scheduledDate);
+                const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+                const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+                const attendance = await this.attendanceRepository.find({
+                    where: {
+                        lessonId: lesson.id,
+                        createdAt: (0, typeorm_2.Between)(startOfDay, endOfDay)
+                    },
+                    relations: ['student'],
+                    order: { createdAt: 'ASC' }
+                });
+                return {
+                    ...lesson,
+                    attendanceHistory: attendance
+                };
+            }));
+            return {
+                ...student,
+                lessons: lessonsWithAttendance
+            };
+        }));
         return {
-            students,
+            students: studentsWithLessons,
         };
     }
     async getTeacherLessons(userId) {

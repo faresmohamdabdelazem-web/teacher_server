@@ -87,6 +87,11 @@ __decorate([
 ], CreateLessonDto.prototype, "price", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(lesson_entity_1.PricingType),
+    __metadata("design:type", String)
+], CreateLessonDto.prototype, "pricingType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateLessonDto.prototype, "grade", void 0);

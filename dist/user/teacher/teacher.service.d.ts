@@ -20,7 +20,7 @@ export declare class TeacherService {
     update(userId: string, updateTeacherDto: Partial<CreateTeacherDto>): Promise<Teacher>;
     remove(userId: string): Promise<void>;
     getTeacherStudents(userId: string): Promise<{
-        students: Student[];
+        students: any[];
     }>;
     getTeacherLessons(userId: string): Promise<{
         lessons: Lesson[];

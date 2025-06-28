@@ -14,6 +14,10 @@ export declare enum LessonStatus {
     CANCELLED = "cancelled",
     EXPIRED = "expired"
 }
+export declare enum PricingType {
+    PER_LESSON = "per_lesson",
+    MONTHLY = "monthly"
+}
 export declare class Lesson {
     id: string;
     title: string;
@@ -27,12 +31,12 @@ export declare class Lesson {
     recurrenceType: LessonRecurrenceType;
     recurrencePattern: any;
     status: LessonStatus;
-    inutes: any;
     createdAt: Date;
     updatedAt: Date;
     teacherId: string;
     teacher: Teacher;
     students: Student[];
     price: number;
+    pricingType: PricingType;
     grade?: string;
 }

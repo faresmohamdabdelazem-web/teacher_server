@@ -1,4 +1,4 @@
-import { LessonRecurrenceType, LessonStatus } from '../entities/lesson.entity';
+import { LessonRecurrenceType, LessonStatus, PricingType } from '../entities/lesson.entity';
 interface RecurrencePattern {
     dayOfWeek?: number;
 }
@@ -17,6 +17,7 @@ export declare class CreateLessonDto {
     recurrencePattern?: RecurrencePattern;
     status?: LessonStatus;
     price?: number;
+    pricingType?: PricingType;
     grade?: string;
 }
 export {};

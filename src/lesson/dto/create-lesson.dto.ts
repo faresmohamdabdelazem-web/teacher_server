@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsOptional, IsString, IsNumber, IsBoolean, IsUUID, IsDateString, IsEnum, IsObject } from 'class-validator';
-import { LessonRecurrenceType, LessonStatus } from '../entities/lesson.entity';
+import { LessonRecurrenceType, LessonStatus, PricingType } from '../entities/lesson.entity';
 
 interface RecurrencePattern {
   dayOfWeek?: number;
@@ -61,6 +61,10 @@ export class CreateLessonDto {
   @IsOptional()
   @IsNumber()
   price?: number;
+
+  @IsOptional()
+  @IsEnum(PricingType)
+  pricingType?: PricingType;
 
   @IsOptional()
   @IsString()

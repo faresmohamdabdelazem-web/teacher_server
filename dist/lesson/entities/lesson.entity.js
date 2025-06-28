@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Lesson = exports.LessonStatus = exports.LessonRecurrenceType = void 0;
+exports.Lesson = exports.PricingType = exports.LessonStatus = exports.LessonRecurrenceType = void 0;
 const typeorm_1 = require("typeorm");
 const teacher_entity_1 = require("../../user/teacher/teacher.entity");
 const student_entity_1 = require("../../user/student/student.entity");
@@ -29,6 +29,11 @@ var LessonStatus;
     LessonStatus["CANCELLED"] = "cancelled";
     LessonStatus["EXPIRED"] = "expired";
 })(LessonStatus || (exports.LessonStatus = LessonStatus = {}));
+var PricingType;
+(function (PricingType) {
+    PricingType["PER_LESSON"] = "per_lesson";
+    PricingType["MONTHLY"] = "monthly";
+})(PricingType || (exports.PricingType = PricingType = {}));
 let Lesson = class Lesson {
 };
 exports.Lesson = Lesson;
@@ -49,7 +54,7 @@ __decorate([
     __metadata("design:type", String)
 ], Lesson.prototype, "subject", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
     __metadata("design:type", Date)
 ], Lesson.prototype, "scheduledDate", void 0);
 __decorate([
@@ -114,9 +119,17 @@ __decorate([
     __metadata("design:type", Array)
 ], Lesson.prototype, "students", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], Lesson.prototype, "price", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'enum',
+        enum: PricingType,
+        default: PricingType.PER_LESSON
+    }),
+    __metadata("design:type", String)
+], Lesson.prototype, "pricingType", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)

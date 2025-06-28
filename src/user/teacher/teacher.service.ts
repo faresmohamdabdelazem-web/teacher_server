@@ -66,7 +66,7 @@ export class TeacherService {
     await this.teacherRepository.remove(teacher);
   }
 
-  async getTeacherStudents(userId: string): Promise<{ students: Student[] }> {
+  async getTeacherStudents(userId: string): Promise<{ students: any[] }> {
     if (!isUUID(userId)) {
       throw new BadRequestException('Invalid teacher ID');
     }
@@ -81,12 +81,45 @@ export class TeacherService {
 
     const students = await this.studentRepository.find({
       where: { teachers: { id: userId } },
-      relations: ['teachers'],
+      relations: ['teachers', 'lessons'],
     });
-    console.log(students);
+
+    // Add lessons with attendance history to each student
+    const studentsWithLessons = await Promise.all(
+      students.map(async (student) => {
+        // Add attendance history to each lesson (filtered by current occurrence date)
+        const lessonsWithAttendance = await Promise.all(
+          student.lessons.map(async (lesson) => {
+            // Get the start and end of the lesson's scheduled date
+            const lessonDate = new Date(lesson.scheduledDate);
+            const startOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate());
+            const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
+
+            const attendance = await this.attendanceRepository.find({
+              where: { 
+                lessonId: lesson.id,
+                createdAt: Between(startOfDay, endOfDay)
+              },
+              relations: ['student'],
+              order: { createdAt: 'ASC' }
+            });
+
+            return {
+              ...lesson,
+              attendanceHistory: attendance
+            };
+          })
+        );
+
+        return {
+          ...student,
+          lessons: lessonsWithAttendance
+        };
+      })
+    );
 
     return {
-      students,
+      students: studentsWithLessons,
     };
   }
 
