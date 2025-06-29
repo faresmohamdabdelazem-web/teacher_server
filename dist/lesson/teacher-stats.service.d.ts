@@ -24,6 +24,6 @@ export declare class TeacherStatsService {
     private updateWeeklyStatsFromDaily;
     private updateMonthlyStatsFromDaily;
     recalculateTeacherStats(teacherId: string): Promise<void>;
+    debugTeacherStats(teacherId: string): Promise<any>;
     clearTeacherStats(teacherId: string): Promise<void>;
-    resetAndRecalculateTeacherStats(teacherId: string): Promise<void>;
 }

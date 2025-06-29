@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In } from 'typeorm';
+import { Repository, Between, In, Not, Equal, LessThan, MoreThan } from 'typeorm';
 import { TeacherStats, StatsPeriod } from './entities/teacher-stats.entity';
-import { Lesson, LessonStatus } from './entities/lesson.entity';
+import { Lesson, LessonStatus, LessonRecurrenceType, PricingType } from './entities/lesson.entity';
 import { LessonAttendance, AttendanceStatus } from './entities/lesson-attendance.entity';
 
 @Injectable()
@@ -121,92 +121,87 @@ export class TeacherStatsService {
     console.log('TeacherStatsService - Initial values:', {
       lessonPrice,
       lessonPriceType: typeof lessonPrice,
-      pricingType: lesson.pricingType
+      pricingType: lesson.pricingType,
+      pricingTypeType: typeof lesson.pricingType,
+      isMonthly: lesson.pricingType === PricingType.MONTHLY,
+      isMonthlyEnum: lesson.pricingType === PricingType.MONTHLY
     });
     
-    if (lesson.pricingType === 'monthly') {
-      console.log('TeacherStatsService - Processing monthly pricing');
-      
-      // For monthly pricing, only charge on the first occurrence of each month
-      const lessonScheduledDate = new Date(lesson.scheduledDate);
-      const monthKey = `${lessonScheduledDate.getFullYear()}-${lessonScheduledDate.getMonth() + 1}`;
-      
-      console.log('TeacherStatsService - Monthly calculation details:', {
-        lessonScheduledDate: lessonScheduledDate.toISOString(),
-        monthKey,
-        year: lessonScheduledDate.getFullYear(),
-        month: lessonScheduledDate.getMonth() + 1
+    if (lesson.pricingType === PricingType.MONTHLY) {
+      console.log('TeacherStatsService - Processing monthly pricing with WEEK COUNT logic');
+      console.log('TeacherStatsService - Lesson details:', {
+        lessonId: lesson.id,
+        pricingType: lesson.pricingType,
+        recurrenceType: lesson.recurrenceType,
+        scheduledDate: lesson.scheduledDate,
+        price: lesson.price
       });
       
-      // Check if this is the first occurrence of this lesson in this month
-      const monthStart = new Date(lessonScheduledDate.getFullYear(), lessonScheduledDate.getMonth(), 1);
-      const monthEnd = new Date(lessonScheduledDate.getFullYear(), lessonScheduledDate.getMonth() + 1, 0, 23, 59, 59, 999);
-      
-      console.log('TeacherStatsService - Month range:', {
-        monthStart: monthStart.toISOString(),
-        monthEnd: monthEnd.toISOString()
-      });
-      
-      // Get all completed lessons for this teacher in this month with the same lesson ID
-      // Exclude the current lesson being completed
-      const completedLessonsInMonth = await this.lessonRepository.find({
-        where: {
-          teacherId: lesson.teacherId,
-          id: lesson.id, // Same lesson ID (recurring lesson)
-          status: LessonStatus.COMPLETED,
-          scheduledDate: Between(monthStart, monthEnd)
-        },
-        order: { scheduledDate: 'ASC' }
-      });
-
-      // Filter out the current lesson from the count (since it was just completed)
-      const otherCompletedLessonsInMonth = completedLessonsInMonth.filter(l => 
-        l.scheduledDate.getTime() !== lessonScheduledDate.getTime()
-      );
-
-      console.log('TeacherStatsService - Completed lessons in month:', {
-        count: completedLessonsInMonth.length,
-        otherCompletedCount: otherCompletedLessonsInMonth.length,
-        lessons: completedLessonsInMonth.map(l => ({
-          id: l.id,
-          scheduledDate: l.scheduledDate,
-          status: l.status,
-          isCurrentLesson: l.scheduledDate.getTime() === lessonScheduledDate.getTime()
-        }))
-      });
-
-      // If no other completed lessons in this month yet, this is the first occurrence
-      const isFirstOccurrenceInMonth = otherCompletedLessonsInMonth.length === 0;
-
-      console.log('TeacherStatsService - First occurrence check:', {
-        isFirstOccurrenceInMonth,
-        completedLessonsInMonth: completedLessonsInMonth.length,
-        otherCompletedLessonsInMonth: otherCompletedLessonsInMonth.length
-      });
-
-      if (isFirstOccurrenceInMonth) {
-        // Calculate earnings for this month (only on first occurrence)
+      // For monthly pricing, only apply to recurring lessons
+      if (lesson.recurrenceType === LessonRecurrenceType.NONE) {
+        console.log('TeacherStatsService - Non-recurring lesson, calculating normal earnings');
         const enrolledStudentsCount = lesson.students?.length || 0;
         earnings = lessonPrice * enrolledStudentsCount;
-        
-        console.log('TeacherStatsService - Monthly pricing earnings calculation (first occurrence in month):', {
-          lessonId: lesson.id,
-          lessonPrice,
-          enrolledStudentsCount,
-          calculatedEarnings: earnings,
-          pricingType: lesson.pricingType,
-          monthKey,
-          isFirstOccurrenceInMonth,
-          totalCompletedInMonth: completedLessonsInMonth.length
-        });
       } else {
-        console.log('TeacherStatsService - Skipping earnings for subsequent occurrence in month:', {
-          lessonId: lesson.id,
-          pricingType: lesson.pricingType,
-          monthKey,
-          isFirstOccurrenceInMonth,
-          totalCompletedInMonth: completedLessonsInMonth.length
+        console.log('TeacherStatsService - Recurring lesson, applying week count logic');
+        
+        // For recurring lessons, calculate week count based on the scheduled date
+        // Each week represents one occurrence of the lesson
+        
+        // Get the lesson's original creation date and first scheduled date
+        const lessonCreationDate = new Date(lesson.createdAt);
+        const firstScheduledDate = new Date(lessonCreationDate);
+        
+        // For weekly recurring lessons, each week = 1 occurrence
+        // For monthly recurring lessons, each month = 1 occurrence
+        // For daily recurring lessons, each day = 1 occurrence
+        
+        let weekCount = 1; // Start with 1 for the current occurrence
+        
+        if (lesson.recurrenceType === LessonRecurrenceType.WEEKLY) {
+          // Calculate weeks since creation
+          const weeksSinceCreation = Math.floor((new Date(lesson.scheduledDate).getTime() - lessonCreationDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+          weekCount = weeksSinceCreation + 1;
+        } else if (lesson.recurrenceType === LessonRecurrenceType.DAILY) {
+          // Calculate days since creation
+          const daysSinceCreation = Math.floor((new Date(lesson.scheduledDate).getTime() - lessonCreationDate.getTime()) / (24 * 60 * 60 * 1000));
+          weekCount = Math.ceil(daysSinceCreation / 7) + 1; // Convert days to weeks
+        } else if (lesson.recurrenceType === LessonRecurrenceType.MONTHLY) {
+          // Calculate months since creation
+          const monthsSinceCreation = Math.floor((new Date(lesson.scheduledDate).getTime() - lessonCreationDate.getTime()) / (30 * 24 * 60 * 60 * 1000));
+          weekCount = monthsSinceCreation * 4 + 1; // Convert months to weeks (1 month = 4 weeks)
+        }
+        
+        console.log('TeacherStatsService - Week count calculation for recurring lesson:', {
+          lessonCreationDate: lessonCreationDate.toISOString(),
+          currentScheduledDate: lesson.scheduledDate,
+          recurrenceType: lesson.recurrenceType,
+          weekCount,
+          isMultipleOfFour: weekCount % 4 === 0
         });
+        
+        // Calculate earnings only when week count is a multiple of 4 (4, 8, 12, etc.)
+        if (weekCount % 4 === 0) {
+          const enrolledStudentsCount = lesson.students?.length || 0;
+          const monthsCount = weekCount / 4; // Convert weeks to months (4 weeks = 1 month)
+          earnings = lessonPrice * enrolledStudentsCount * monthsCount;
+          
+          console.log('TeacherStatsService - Monthly pricing earnings calculation (week count multiple of 4):', {
+            lessonId: lesson.id,
+            lessonPrice,
+            enrolledStudentsCount,
+            weekCount,
+            monthsCount,
+            calculatedEarnings: earnings,
+            pricingType: lesson.pricingType
+          });
+        } else {
+          console.log('TeacherStatsService - Skipping earnings, week count not multiple of 4:', {
+            lessonId: lesson.id,
+            weekCount,
+            nextEarningsAt: Math.ceil(weekCount / 4) * 4
+          });
+        }
       }
     } else {
       console.log('TeacherStatsService - Processing per_lesson pricing');
@@ -234,6 +229,8 @@ export class TeacherStatsService {
       earningsType: typeof earnings
     });
     
+    // Count each lesson completion (this is correct for tracking activity)
+    // The issue with completion rate will be fixed in the aggregation logic
     const updates = { 
       completedLessons: 1,
       totalEarnings: earnings
@@ -241,11 +238,38 @@ export class TeacherStatsService {
     
     console.log('TeacherStatsService - Updates object:', updates);
     
-    // Use lesson's scheduled date for earnings (not current date)
-    const lessonDate = new Date(lesson.scheduledDate);
-    console.log('TeacherStatsService - Using lesson date for stats:', lessonDate.toISOString());
+    // Use different dates based on pricing type:
+    // - For daily lessons: Use current date (actual completion date)
+    // - For monthly lessons: Use lesson's scheduled date (for proper week counting)
+    let statsDate: Date;
     
-    await this.updateStatsForLessonWithDate(lesson, 'completed', updates, lessonDate);
+    console.log('TeacherStatsService - Date selection logic:', {
+      lessonId: lesson.id,
+      pricingType: lesson.pricingType,
+      recurrenceType: lesson.recurrenceType,
+      scheduledDate: lesson.scheduledDate,
+      isMonthlyRecurring: lesson.pricingType === PricingType.MONTHLY && lesson.recurrenceType !== LessonRecurrenceType.NONE
+    });
+    
+    if (lesson.pricingType === PricingType.MONTHLY && lesson.recurrenceType !== LessonRecurrenceType.NONE) {
+      // For monthly recurring lessons, use scheduled date for proper week counting
+      statsDate = new Date(lesson.scheduledDate);
+      console.log('TeacherStatsService - Using scheduled date for monthly recurring lesson:', {
+        lessonId: lesson.id,
+        scheduledDate: lesson.scheduledDate,
+        statsDate: statsDate.toISOString()
+      });
+    } else {
+      // For daily lessons and other types, use current date (actual completion date)
+      statsDate = new Date();
+      console.log('TeacherStatsService - Using current date for daily/other lesson:', {
+        lessonId: lesson.id,
+        currentDate: statsDate.toISOString(),
+        scheduledDate: lesson.scheduledDate
+      });
+    }
+    
+    await this.updateStatsForLessonWithDate(lesson, 'completed', updates, statsDate);
   }
 
   // Main method to update stats for a lesson with cumulative changes
@@ -352,7 +376,8 @@ export class TeacherStatsService {
       totalAttendance: dailyStats.totalAttendance,
       totalEarnings: dailyStats.totalEarnings,
       completedLessons: dailyStats.completedLessons,
-      completionRate: dailyStats.completionRate
+      completionRate: dailyStats.completionRate,
+      changes: changes
     });
 
     await this.teacherStatsRepository.save(dailyStats);
@@ -541,28 +566,114 @@ export class TeacherStatsService {
       };
     }
 
+    console.log('TeacherStatsService - Processing stats for response...');
+
+    // For weekly stats, we need to calculate completion rate differently
+    // because completedLessons counts occurrences, not unique lessons
+    if (period === StatsPeriod.WEEKLY) {
+      // Get the actual number of unique lessons for this teacher
+      const uniqueLessons = await this.lessonRepository.count({
+        where: { teacherId }
+      });
+      
+      console.log('TeacherStatsService - Unique lessons count for teacher:', uniqueLessons);
+      
+      return {
+        teacherId,
+        period,
+        stats: stats.map(stat => {
+          console.log('TeacherStatsService - Processing weekly stat:', stat);
+          
+          // Ensure proper type handling for numeric fields
+          const totalLessons = parseInt(stat.totalLessons.toString()) || 0;
+          const totalStudents = parseInt(stat.totalStudents.toString()) || 0;
+          const totalAttendance = parseInt(stat.totalAttendance.toString()) || 0;
+          const totalEarnings = parseFloat(stat.totalEarnings.toString()) || 0;
+          const completedLessons = parseInt(stat.completedLessons.toString()) || 0;
+          const cancelledLessons = parseInt(stat.cancelledLessons.toString()) || 0;
+          const expiredLessons = parseInt(stat.expiredLessons.toString()) || 0;
+          const averageEarningsPerLesson = parseFloat(stat.averageEarningsPerLesson.toString()) || 0;
+          const averageStudentsPerLesson = parseFloat(stat.averageStudentsPerLesson.toString()) || 0;
+          
+          // For weekly stats, calculate completion rate based on unique lessons
+          // If there are completed lesson occurrences, assume at least one unique lesson was completed
+          const completionRate = uniqueLessons > 0 && completedLessons > 0 ? 100 : 0;
+
+          console.log('TeacherStatsService - Weekly stats calculation:', {
+            totalLessons,
+            totalStudents,
+            totalAttendance,
+            totalEarnings,
+            completedLessons,
+            cancelledLessons,
+            expiredLessons,
+            averageEarningsPerLesson,
+            averageStudentsPerLesson,
+            uniqueLessons,
+            completionRate
+          });
+
+          return {
+            date: new Date(stat.date).toISOString().split('T')[0],
+            totalLessons,
+            totalStudents,
+            totalAttendance,
+            totalEarnings,
+            averageEarningsPerLesson,
+            averageStudentsPerLesson,
+            completionRate,
+            completedLessons,
+            cancelledLessons,
+            expiredLessons
+          };
+        })
+      };
+    }
+
+    // For daily and monthly stats, use the original logic
     return {
       teacherId,
       period,
       stats: stats.map(stat => {
         console.log('TeacherStatsService - Processing stat:', stat);
-        console.log('TeacherStatsService - Stat date type:', typeof stat.date);
-        console.log('TeacherStatsService - Stat date value:', stat.date);
-        console.log('TeacherStatsService - Stat totalEarnings type:', typeof stat.totalEarnings);
-        console.log('TeacherStatsService - Stat totalEarnings value:', stat.totalEarnings);
         
+        // Ensure proper type handling for numeric fields
+        const totalLessons = parseInt(stat.totalLessons.toString()) || 0;
+        const totalStudents = parseInt(stat.totalStudents.toString()) || 0;
+        const totalAttendance = parseInt(stat.totalAttendance.toString()) || 0;
+        const totalEarnings = parseFloat(stat.totalEarnings.toString()) || 0;
+        const completedLessons = parseInt(stat.completedLessons.toString()) || 0;
+        const cancelledLessons = parseInt(stat.cancelledLessons.toString()) || 0;
+        const expiredLessons = parseInt(stat.expiredLessons.toString()) || 0;
+        const averageEarningsPerLesson = parseFloat(stat.averageEarningsPerLesson.toString()) || 0;
+        const averageStudentsPerLesson = parseFloat(stat.averageStudentsPerLesson.toString()) || 0;
+        const completionRate = parseFloat(stat.completionRate.toString()) || 0;
+
+        console.log('TeacherStatsService - Parsed values:', {
+          totalLessons,
+          totalStudents,
+          totalAttendance,
+          totalEarnings,
+          completedLessons,
+          cancelledLessons,
+          expiredLessons,
+          averageEarningsPerLesson,
+          averageStudentsPerLesson,
+          completionRate
+        });
+
         return {
           date: new Date(stat.date).toISOString().split('T')[0],
-          totalLessons: stat.totalLessons,
-          totalStudents: stat.totalStudents,
-          totalAttendance: stat.totalAttendance,
-          totalEarnings: parseFloat(stat.totalEarnings.toString()),
-          averageEarningsPerLesson: parseFloat(stat.averageEarningsPerLesson.toString()),
-          averageStudentsPerLesson: parseFloat(stat.averageStudentsPerLesson.toString()),
-          completionRate: parseFloat(stat.completionRate.toString()),
-          completedLessons: stat.completedLessons,
-          cancelledLessons: stat.cancelledLessons,
-          expiredLessons: stat.expiredLessons
+          totalLessons,
+          totalStudents,
+          totalAttendance,
+          totalEarnings,
+          averageEarningsPerLesson,
+          averageStudentsPerLesson,
+          completionRate,
+          completedLessons,
+          cancelledLessons,
+          expiredLessons
         };
       })
     };
@@ -631,7 +742,7 @@ export class TeacherStatsService {
         if (lesson.status === LessonStatus.COMPLETED) {
           const lessonPrice = parseFloat(lesson.price?.toString() || '0');
           
-          if (lesson.pricingType === 'monthly') {
+          if (lesson.pricingType === PricingType.MONTHLY) {
             // For monthly pricing, only charge on the first occurrence of each month
             const lessonScheduledDate = new Date(lesson.scheduledDate);
             const monthKey = `${lessonScheduledDate.getFullYear()}-${lessonScheduledDate.getMonth() + 1}`;
@@ -652,17 +763,6 @@ export class TeacherStatsService {
             const otherCompletedLessonsInMonth = completedLessonsInMonth.filter(l => 
               l.scheduledDate.getTime() !== lessonScheduledDate.getTime()
             );
-
-            console.log('TeacherStatsService - Completed lessons in month:', {
-              count: completedLessonsInMonth.length,
-              otherCompletedCount: otherCompletedLessonsInMonth.length,
-              lessons: completedLessonsInMonth.map(l => ({
-                id: l.id,
-                scheduledDate: l.scheduledDate,
-                status: l.status,
-                isCurrentLesson: l.scheduledDate.getTime() === lessonScheduledDate.getTime()
-              }))
-            });
 
             // If no other completed lessons in this month yet, this is the first occurrence
             const isFirstOccurrenceInMonth = otherCompletedLessonsInMonth.length === 0;
@@ -967,7 +1067,7 @@ export class TeacherStatsService {
         if (lesson.status === LessonStatus.COMPLETED) {
           const lessonPrice = parseFloat(lesson.price?.toString() || '0');
           
-          if (lesson.pricingType === 'monthly') {
+          if (lesson.pricingType === PricingType.MONTHLY) {
             // For monthly pricing, only charge on the first occurrence of each month
             const lessonScheduledDate = new Date(lesson.scheduledDate);
             const monthKey = `${lessonScheduledDate.getFullYear()}-${lessonScheduledDate.getMonth() + 1}`;
@@ -988,17 +1088,6 @@ export class TeacherStatsService {
             const otherCompletedLessonsInMonth = completedLessonsInMonth.filter(l => 
               l.scheduledDate.getTime() !== lessonScheduledDate.getTime()
             );
-
-            console.log('TeacherStatsService - Completed lessons in month:', {
-              count: completedLessonsInMonth.length,
-              otherCompletedCount: otherCompletedLessonsInMonth.length,
-              lessons: completedLessonsInMonth.map(l => ({
-                id: l.id,
-                scheduledDate: l.scheduledDate,
-                status: l.status,
-                isCurrentLesson: l.scheduledDate.getTime() === lessonScheduledDate.getTime()
-              }))
-            });
 
             // If no other completed lessons in this month yet, this is the first occurrence
             const isFirstOccurrenceInMonth = otherCompletedLessonsInMonth.length === 0;
@@ -1126,26 +1215,55 @@ export class TeacherStatsService {
     console.log('TeacherStatsService - Stats recalculation completed for teacher:', teacherId);
   }
 
-  // Clear all stats for a teacher and start fresh
-  async clearTeacherStats(teacherId: string): Promise<void> {
-    console.log('TeacherStatsService - Clearing all stats for teacher:', teacherId);
-    
-    // Delete all existing stats for this teacher
-    await this.teacherStatsRepository.delete({ teacherId });
-    
-    console.log('TeacherStatsService - All stats cleared for teacher:', teacherId);
+  // Debug method to check teacher stats
+  async debugTeacherStats(teacherId: string): Promise<any> {
+    const allStats = await this.teacherStatsRepository.find({
+      where: { teacherId },
+      order: { period: 'ASC', date: 'ASC' }
+    });
+
+    const lessons = await this.lessonRepository.find({
+      where: { teacherId },
+      order: { scheduledDate: 'ASC' }
+    });
+
+    const completedLessons = lessons.filter(l => l.status === LessonStatus.COMPLETED);
+    const createdLessons = lessons.filter(l => l.status !== LessonStatus.CANCELLED && l.status !== LessonStatus.EXPIRED);
+
+    return {
+      teacherId,
+      totalStatsRecords: allStats.length,
+      totalLessons: lessons.length,
+      createdLessons: createdLessons.length,
+      completedLessons: completedLessons.length,
+      statsByPeriod: {
+        daily: allStats.filter(s => s.period === StatsPeriod.DAILY),
+        weekly: allStats.filter(s => s.period === StatsPeriod.WEEKLY),
+        monthly: allStats.filter(s => s.period === StatsPeriod.MONTHLY)
+      },
+      lessons: lessons.map(l => ({
+        id: l.id,
+        title: l.title,
+        status: l.status,
+        scheduledDate: l.scheduledDate,
+        pricingType: l.pricingType,
+        price: l.price,
+        recurrenceType: l.recurrenceType
+      })),
+      stats: allStats.map(s => ({
+        id: s.id,
+        period: s.period,
+        date: s.date,
+        totalLessons: s.totalLessons,
+        completedLessons: s.completedLessons,
+        totalEarnings: s.totalEarnings,
+        completionRate: s.completionRate
+      }))
+    };
   }
 
-  // Complete reset and recalculation for a teacher
-  async resetAndRecalculateTeacherStats(teacherId: string): Promise<void> {
-    console.log('TeacherStatsService - Resetting and recalculating stats for teacher:', teacherId);
-    
-    // First clear all existing stats
-    await this.clearTeacherStats(teacherId);
-    
-    // Then recalculate from scratch
-    await this.recalculateTeacherStats(teacherId);
-    
-    console.log('TeacherStatsService - Reset and recalculation completed for teacher:', teacherId);
+  // Clear all stats for a teacher (for debugging)
+  async clearTeacherStats(teacherId: string): Promise<void> {
+    await this.teacherStatsRepository.delete({ teacherId });
   }
 } 

@@ -47,8 +47,8 @@ let LessonController = class LessonController {
     getLessonsByDate(date) {
         return this.lessonService.getLessonsByDate(date);
     }
-    getTodayLessons(date) {
-        return this.lessonService.getTodayLessons(date);
+    getTodayLessons(date, subject, status, grade) {
+        return this.lessonService.getTodayLessons(date, subject, status, grade);
     }
     findOne(id) {
         return this.lessonService.findOne(id);
@@ -137,6 +137,13 @@ let LessonController = class LessonController {
     debugLessonData(id) {
         return this.lessonService.debugLessonData(id);
     }
+    async debugTeacherStats(teacherId) {
+        return this.lessonService.teacherStatsService.debugTeacherStats(teacherId);
+    }
+    async clearTeacherStats(teacherId) {
+        await this.lessonService.teacherStatsService.clearTeacherStats(teacherId);
+        return { message: 'Teacher stats cleared successfully' };
+    }
 };
 exports.LessonController = LessonController;
 __decorate([
@@ -189,8 +196,11 @@ __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
     (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.ADMIN, user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT),
     __param(0, (0, common_1.Query)('date')),
+    __param(1, (0, common_1.Query)('subject')),
+    __param(2, (0, common_1.Query)('status')),
+    __param(3, (0, common_1.Query)('grade')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String, String, String]),
     __metadata("design:returntype", void 0)
 ], LessonController.prototype, "getTodayLessons", null);
 __decorate([
@@ -464,6 +474,24 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], LessonController.prototype, "debugLessonData", null);
+__decorate([
+    (0, common_1.Get)('debug/teacher-stats/:teacherId'),
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.ADMIN, user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT),
+    __param(0, (0, common_1.Param)('teacherId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], LessonController.prototype, "debugTeacherStats", null);
+__decorate([
+    (0, common_1.Post)('debug/clear-teacher-stats/:teacherId'),
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Param)('teacherId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], LessonController.prototype, "clearTeacherStats", null);
 exports.LessonController = LessonController = __decorate([
     (0, common_1.Controller)('lessons'),
     __metadata("design:paramtypes", [lesson_service_1.LessonService])

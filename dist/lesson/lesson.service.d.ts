@@ -18,7 +18,7 @@ export declare class LessonService {
     private teacherRepository;
     private studentRepository;
     private readonly userService;
-    private readonly teacherStatsService;
+    readonly teacherStatsService: TeacherStatsService;
     private readonly whatsAppService;
     constructor(lessonRepository: Repository<Lesson>, attendanceRepository: Repository<LessonAttendance>, teacherRepository: Repository<Teacher>, studentRepository: Repository<Student>, userService: UserService, teacherStatsService: TeacherStatsService, whatsAppService: WhatsAppService);
     create(createLessonDto: CreateLessonDto, userId: string, userRole: string): Promise<{
@@ -68,7 +68,7 @@ export declare class LessonService {
     getLessonsByDate(date: string): Promise<{
         lessons: Lesson[];
     }>;
-    getTodayLessons(date?: string): Promise<{
+    getTodayLessons(date?: string, subject?: string, status?: LessonStatus, grade?: string): Promise<{
         lessons: Lesson[];
     }>;
     startAttendance(startAttendanceDto: StartAttendanceDto, userId: string, userRole: string): Promise<{

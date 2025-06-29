@@ -126,8 +126,8 @@ let TeacherService = class TeacherService {
                 where: {
                     lessonId: lesson.id,
                 },
-                relations: ['student'],
-                order: { createdAt: 'ASC' }
+                relations: ['student', 'lesson'],
+                order: { lesson: { scheduledDate: 'ASC' } }
             });
             return {
                 ...lesson,

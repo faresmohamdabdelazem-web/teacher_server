@@ -28,7 +28,7 @@ export declare class LessonController {
     getLessonsByDate(date: string): Promise<{
         lessons: import("./entities/lesson.entity").Lesson[];
     }>;
-    getTodayLessons(date?: string): Promise<{
+    getTodayLessons(date?: string, subject?: string, status?: LessonStatus, grade?: string): Promise<{
         lessons: import("./entities/lesson.entity").Lesson[];
     }>;
     findOne(id: string): Promise<{
@@ -98,4 +98,8 @@ export declare class LessonController {
     debugTeacherLessons(teacherId: string): Promise<any>;
     getTeacherStatsByDate(teacherId: string, startDate: string, endDate: string): Promise<any>;
     debugLessonData(id: string): Promise<any>;
+    debugTeacherStats(teacherId: string): Promise<any>;
+    clearTeacherStats(teacherId: string): Promise<{
+        message: string;
+    }>;
 }

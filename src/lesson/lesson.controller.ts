@@ -72,8 +72,13 @@ export class LessonController {
   @Get('today')
   @UseGuards(AuthGuard)
   @Roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.ASSISTANT)
-  getTodayLessons(@Query('date') date?: string) {
-    return this.lessonService.getTodayLessons(date);
+  getTodayLessons(
+    @Query('date') date?: string,
+    @Query('subject') subject?: string,
+    @Query('status') status?: LessonStatus,
+    @Query('grade') grade?: string,
+  ) {
+    return this.lessonService.getTodayLessons(date, subject, status, grade);
   }
 
   // @Get('grade/:grade')
@@ -351,5 +356,20 @@ export class LessonController {
   @Roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.ASSISTANT)
   debugLessonData(@Param('id') id: string) {
     return this.lessonService.debugLessonData(id);
+  }
+
+  @Get('debug/teacher-stats/:teacherId')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.ASSISTANT)
+  async debugTeacherStats(@Param('teacherId') teacherId: string): Promise<any> {
+    return this.lessonService.teacherStatsService.debugTeacherStats(teacherId);
+  }
+
+  @Post('debug/clear-teacher-stats/:teacherId')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN)
+  async clearTeacherStats(@Param('teacherId') teacherId: string): Promise<{ message: string }> {
+    await this.lessonService.teacherStatsService.clearTeacherStats(teacherId);
+    return { message: 'Teacher stats cleared successfully' };
   }
 } 

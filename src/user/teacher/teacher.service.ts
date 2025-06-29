@@ -154,8 +154,8 @@ export class TeacherService {
             lessonId: lesson.id,
             // createdAt: Between(startOfDay, endOfDay)
           },
-          relations: ['student'],
-          order: { createdAt: 'ASC' }
+          relations: ['student', 'lesson'],
+          order: { lesson: { scheduledDate: 'ASC' } }
         });
 
         return {
