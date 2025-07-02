@@ -72,6 +72,77 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 
 Nest is [MIT licensed](LICENSE).
 
+## Vercel Deployment
+
+This NestJS application is configured for deployment on Vercel. Follow these steps to deploy:
+
+### Prerequisites
+
+1. Install Vercel CLI:
+```bash
+npm i -g vercel
+```
+
+2. Make sure you have a Vercel account and are logged in:
+```bash
+vercel login
+```
+
+### Environment Variables
+
+Set up the following environment variables in your Vercel project:
+
+- `DB_HOST` - Your PostgreSQL database host
+- `DB_PORT` - Your PostgreSQL database port (usually 5432)
+- `DB_USERNAME` - Your PostgreSQL database username
+- `DB_PASSWORD` - Your PostgreSQL database password
+- `DB_DATABASE` - Your PostgreSQL database name
+- `NODE_ENV` - Set to "production"
+- `JWT_SECRET` - Your JWT secret key
+- Any other environment variables your application needs
+
+### Deployment Steps
+
+1. **Deploy to Vercel:**
+```bash
+vercel
+```
+
+2. **For production deployment:**
+```bash
+vercel --prod
+```
+
+3. **Set environment variables:**
+```bash
+vercel env add DB_HOST
+vercel env add DB_PASSWORD
+# ... add all other required environment variables
+```
+
+### Important Notes
+
+- The application uses the `api/index.ts` file as the serverless entry point
+- Database migrations should be run manually after deployment
+- Make sure your database is accessible from Vercel's servers
+- The application will be available at your Vercel domain with the `/api/v2` prefix
+
+### Running Migrations
+
+After deployment, you may need to run database migrations:
+
+```bash
+# Connect to your database and run migrations manually
+# or set up a migration script in your deployment pipeline
+```
+
+### Troubleshooting
+
+- Check Vercel function logs for any deployment issues
+- Ensure all environment variables are properly set
+- Verify database connectivity from Vercel's servers
+- Check that your database supports SSL connections (required for production)
+
 ## Entity Structures
 
 ### Teacher Entity (`src/user/teacher/teacher.entity.ts`)
