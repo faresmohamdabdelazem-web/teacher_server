@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   UsePipes,
+  Query,
 } from '@nestjs/common';
 import { TeacherService } from './teacher.service';
 import { CreateTeacherDto } from './create-teacher.dto';
@@ -22,6 +23,9 @@ import { PhoneNumberPipe } from 'src/shared/phone-number.pipe';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { User } from '../entities/user.entity';
 import { AssistantService } from '../assistant/assistant.service';
+import { LessonStatus } from '../../lesson/entities/lesson.entity';
+import { StudentService } from '../student/student.service';
+import { CreateStudentDto } from '../student/create-student.dto';
 
 @UseGuards(AuthGuard, RoleGuard)
 @Controller('teachers')
@@ -30,6 +34,7 @@ export class TeacherController {
     private readonly teacherService: TeacherService,
     private readonly userService: UserService,
     private readonly assistantService: AssistantService,
+    private readonly studentService: StudentService,
   ) {}
 
   @Roles(UserRole.ADMIN)
@@ -58,8 +63,14 @@ export class TeacherController {
 
   @Roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.ASSISTANT)
   @Get(':id/lessons')
-  getTeacherLessons(@Param('id') id: string) {
-    return this.teacherService.getTeacherLessons(id);
+  getTeacherLessons(
+    @Param('id') id: string,
+    @Query('date') date?: string,
+    @Query('subject') subject?: string,
+    @Query('status') status?: LessonStatus,
+    @Query('grade') grade?: string
+  ) {
+    return this.teacherService.getTeacherLessons(id, date, subject, status, grade);
   }
 
   @Roles(UserRole.ADMIN, UserRole.TEACHER)
@@ -132,6 +143,28 @@ export class TeacherController {
         createdAt: assistant.createdAt,
         teacherId: assistantEntity.teacherId,
       },
+    };
+  }
+
+  // Teacher endpoint to create students
+  @Post('create-student')
+  @Roles(UserRole.TEACHER)
+  async createStudent(
+    @Body() createStudentDto: CreateStudentDto,
+    @GetSignedUser() user: UserPayload,
+  ) {
+    // Verify that the user is a teacher
+    const currentUser = await this.userService.findOneById(user.id);
+    if (!currentUser || currentUser.role !== UserRole.TEACHER) {
+      throw new Error('Only teachers can create students');
+    }
+    // Create the student
+    const student = await this.studentService.create(createStudentDto);
+    // Associate the student with the teacher
+    await this.teacherService.addStudentToTeacher(currentUser.userId, student.id);
+    return {
+      message: 'Student created successfully by teacher',
+      student,
     };
   }
 } 

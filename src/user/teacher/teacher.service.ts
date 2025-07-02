@@ -6,7 +6,7 @@ import { Student } from '../student/student.entity';
 import { CreateTeacherDto } from './create-teacher.dto';
 import { UUID } from 'typeorm/driver/mongodb/bson.typings';
 import { isUUID } from 'class-validator';
-import { Lesson } from '../../lesson/entities/lesson.entity';
+import { Lesson, LessonStatus } from '../../lesson/entities/lesson.entity';
 import { User } from '../../user/entities/user.entity';
 import { UserRole } from '../user.role.enum';
 import { LessonAttendance } from '../../lesson/entities/lesson-attendance.entity';
@@ -96,7 +96,7 @@ export class TeacherService {
             const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
 
             const attendance = await this.attendanceRepository.find({
-              where: { 
+              where: {
                 lessonId: lesson.id,
                 createdAt: Between(startOfDay, endOfDay)
               },
@@ -123,7 +123,13 @@ export class TeacherService {
     };
   }
 
-  async getTeacherLessons(userId: string): Promise<{ lessons: Lesson[] }> {
+  async getTeacherLessons(
+    userId: string,
+    date?: string,
+    subject?: string,
+    status?: LessonStatus,
+    grade?: string
+  ): Promise<{ lessons: Lesson[] }> {
     if (!isUUID(userId)) {
       throw new BadRequestException('Invalid teacher ID');
     }
@@ -135,10 +141,37 @@ export class TeacherService {
     if (!teacher) {
       throw new NotFoundException('Teacher not found');
     }
-    
+
+    // Build the where clause with filters
+    const whereClause: any = { teacher: { id: userId } };
+
+    // Add date filter if provided
+    if (date) {
+      const targetDate = new Date(date);
+      const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+      const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999);
+      whereClause.scheduledDate = Between(startOfDay, endOfDay);
+    }
+
+    // Add subject filter if provided
+    if (subject) {
+      whereClause.subject = subject;
+    }
+
+    // Add status filter if provided
+    if (status) {
+      whereClause.status = status;
+    }
+
+    // Add grade filter if provided
+    if (grade) {
+      whereClause.grade = grade;
+    }
+
     const lessons = await this.lessonRepository.find({
-      where: { teacher: { id: userId } },
+      where: whereClause,
       relations: ['teacher', 'students'],
+      order: { startTime: 'ASC' },
     });
 
     // Add attendance history to each lesson (filtered by current occurrence date)
@@ -150,7 +183,7 @@ export class TeacherService {
         const endOfDay = new Date(lessonDate.getFullYear(), lessonDate.getMonth(), lessonDate.getDate(), 23, 59, 59, 999);
 
         const attendance = await this.attendanceRepository.find({
-          where: { 
+          where: {
             lessonId: lesson.id,
             // createdAt: Between(startOfDay, endOfDay)
           },

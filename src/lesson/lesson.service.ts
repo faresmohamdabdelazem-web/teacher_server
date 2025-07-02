@@ -804,6 +804,10 @@ export class LessonService {
 
     const lesson = await this.findOne(markAttendanceDto.lessonId);
 
+    // Check if attendance is open or lesson is in progress
+    if (lesson.lesson.status !== LessonStatus.ATTENDANCE_OPEN && lesson.lesson.status !== LessonStatus.IN_PROGRESS) {
+      throw new BadRequestException('Attendance can only be marked when lesson is open for attendance or in progress');
+    }
     // Check if lesson is in the past (more than 1 day old)
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -812,19 +816,30 @@ export class LessonService {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
+    if (lessonDate < yesterday) {
+      throw new BadRequestException('Attendance cannot be marked for lessons that are more than 1 day in the past');
+    }
     const students = await this.getLessonStudents(markAttendanceDto.lessonId);
     const isEnrolled = students.students.some(student => student.id === markAttendanceDto.studentId);
     if (!isEnrolled) {
       throw new BadRequestException('Student is not enrolled in this lesson');
     }
-    if (lessonDate < yesterday) {
-      throw new BadRequestException('Attendance cannot be marked for lessons that are more than 1 day in the past');
+
+
+    // Check if an attendance record already exists for this student and lesson (for the same occurrence)
+    const startOfDay = new Date(lesson.lesson.scheduledDate.getFullYear(), lesson.lesson.scheduledDate.getMonth(), lesson.lesson.scheduledDate.getDate());
+    const endOfDay = new Date(lesson.lesson.scheduledDate.getFullYear(), lesson.lesson.scheduledDate.getMonth(), lesson.lesson.scheduledDate.getDate(), 23, 59, 59, 999);
+    const existingAttendance = await this.attendanceRepository.findOne({
+      where: {
+        lessonId: markAttendanceDto.lessonId,
+        studentId: markAttendanceDto.studentId,
+        attendanceTime: Between(startOfDay, endOfDay)
+      }
+    });
+    if (existingAttendance) {
+      throw new ConflictException('Attendance for this student in this lesson already exists for this occurrence');
     }
 
-    // Check if attendance is open or lesson is in progress
-    if (lesson.lesson.status !== LessonStatus.ATTENDANCE_OPEN && lesson.lesson.status !== LessonStatus.IN_PROGRESS) {
-      throw new BadRequestException('Attendance can only be marked when lesson is open for attendance or in progress');
-    }
     // Always create a new attendance record for this occurrence
     // This ensures each occurrence has its own attendance record
     const currentTime = new Date();
@@ -1538,12 +1553,20 @@ export class LessonService {
       where: { lessonId: In(lessonIds) }
     });
 
+    // Count unique students across all lessons
+    const uniqueStudentIds = new Set();
+    lessons.forEach(lesson => {
+      lesson.students?.forEach(student => {
+        uniqueStudentIds.add(student.id);
+      });
+    });
+
     return {
       teacherId,
       startDate,
       endDate,
       totalLessons: lessons.length,
-      totalStudents: lessons.reduce((sum, lesson) => sum + lesson.students.length, 0),
+      totalStudents: uniqueStudentIds.size,
       totalAttendance: attendanceData.length,
       totalEarnings: lessons.reduce((sum, lesson) => sum + (parseFloat(lesson.price?.toString() || '0')), 0),
       lessons: lessons.map(lesson => {

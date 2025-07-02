@@ -36,7 +36,7 @@ export class UserController {
     private readonly studentService: StudentService,
     private readonly teacherService: TeacherService,
     private readonly assistantService: AssistantService,
-  ) {}
+  ) { }
 
   @Post()
   @Roles(UserRole.ADMIN)
@@ -92,17 +92,12 @@ export class UserController {
   ) {
     // Verify that the user is an assistant
     const currentUser = await this.userService.findOneById(user.id);
-    if (!currentUser || currentUser.role !== UserRole.ASSISTANT) {
+    if (!currentUser || currentUser.role !== UserRole.ASSISTANT && currentUser.role !== UserRole.TEACHER) {
       throw new Error('Only assistants can create students');
     }
 
     // Create the student entity
-    const student = await this.studentService.create({
-      firstName: createStudentData.firstName,
-      lastName: createStudentData.lastName,
-      phoneNumber: createStudentData.phoneNumber,
-      parentPhoneNumber: createStudentData.parentPhoneNumber,
-    });
+    const student = await this.studentService.create(createStudentData);
 
     // Find the assistant entity and their teacher
     const assistant = await this.assistantService.findByUserId(currentUser.userId);

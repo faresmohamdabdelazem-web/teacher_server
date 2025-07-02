@@ -13,7 +13,7 @@ import { CreateStudentDto } from './create-student.dto';
 
 @Controller('students')
 export class StudentController {
-  constructor(private readonly studentService: StudentService) {}
+  constructor(private readonly studentService: StudentService) { }
 
   @Post()
   create(@Body() createStudentDto: CreateStudentDto) {
@@ -33,6 +33,11 @@ export class StudentController {
   @Get('phoneNumber/:phoneNumber')
   findByPhoneNumber(@Param('phoneNumber') phoneNumber: string) {
     return this.studentService.findByPhoneNumber(phoneNumber);
+  }
+
+  @Get('manualEntryId/:manualEntryId')
+  findByManualEntryId(@Param('manualEntryId') manualEntryId: string) {
+    return this.studentService.findByManualEntryId(manualEntryId);
   }
 
   @Patch(':id')

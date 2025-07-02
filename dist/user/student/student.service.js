@@ -17,9 +17,12 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const student_entity_1 = require("./student.entity");
+const cloudinary_service_1 = require("../../cloudinary/cloudinary.service");
+const hatly_constants_1 = require("../../hatly.constants");
 let StudentService = class StudentService {
-    constructor(studentRepository) {
+    constructor(studentRepository, cloudinary) {
         this.studentRepository = studentRepository;
+        this.cloudinary = cloudinary;
     }
     async create(createStudentDto) {
         if (createStudentDto.phoneNumber) {
@@ -30,7 +33,39 @@ let StudentService = class StudentService {
                 throw new common_1.ConflictException('Student with this phone number already exists');
             }
         }
-        const student = this.studentRepository.create(createStudentDto);
+        let manualEntryId = createStudentDto.manualEntryId;
+        if (manualEntryId) {
+            const existingManualId = await this.studentRepository.findOne({ where: { manualEntryId } });
+            if (existingManualId) {
+                throw new common_1.ConflictException('Student with this manualEntryId already exists');
+            }
+        }
+        else {
+            const maxRetries = 10;
+            let retryCount = 0;
+            let isUnique = false;
+            while (!isUnique && retryCount < maxRetries) {
+                manualEntryId = Math.floor(1000000 + Math.random() * 9000000).toString();
+                const existingManualId = await this.studentRepository.findOne({ where: { manualEntryId } });
+                if (!existingManualId) {
+                    isUnique = true;
+                }
+                retryCount++;
+            }
+            if (!isUnique) {
+                throw new common_1.ConflictException('Unable to generate unique manualEntryId after maximum retries');
+            }
+        }
+        let profilePhotoUrl = createStudentDto.profilePhoto;
+        console.log(profilePhotoUrl);
+        if (profilePhotoUrl && !profilePhotoUrl.startsWith('http')) {
+            profilePhotoUrl = await this.cloudinary.uploadBase64(profilePhotoUrl, hatly_constants_1.PROFILE_PHOTO_FILE, `student_${createStudentDto.phoneNumber || Date.now()}`);
+        }
+        const student = this.studentRepository.create({
+            ...createStudentDto,
+            profilePhoto: profilePhotoUrl,
+            manualEntryId,
+        });
         console.log(student);
         const savedStudent = await this.studentRepository.save(student);
         console.log(savedStudent);
@@ -53,9 +88,14 @@ let StudentService = class StudentService {
         return { student };
     }
     async findByPhoneNumber(phoneNumber) {
-        return await this.studentRepository.findOne({
+        const student = await this.studentRepository.findOne({
             where: { phoneNumber: phoneNumber },
+            relations: ['teachers', 'lessons'],
         });
+        if (!student) {
+            throw new common_1.NotFoundException('Student not found');
+        }
+        return { student };
     }
     async findById(id) {
         const student = await this.studentRepository.findOne({
@@ -63,7 +103,7 @@ let StudentService = class StudentService {
             relations: ['teachers', 'lessons'],
         });
         if (!student) {
-            return null;
+            throw new common_1.NotFoundException('Student not found');
         }
         return { student };
     }
@@ -104,11 +144,22 @@ let StudentService = class StudentService {
         }
         return { lessons: student.lessons };
     }
+    async findByManualEntryId(manualEntryId) {
+        const student = await this.studentRepository.findOne({
+            where: { manualEntryId: manualEntryId },
+            relations: ['teachers', 'lessons'],
+        });
+        if (!student) {
+            throw new common_1.NotFoundException('Student not found');
+        }
+        return { student };
+    }
 };
 exports.StudentService = StudentService;
 exports.StudentService = StudentService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(student_entity_1.Student)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        cloudinary_service_1.CloudinaryService])
 ], StudentService);
 //# sourceMappingURL=student.service.js.map

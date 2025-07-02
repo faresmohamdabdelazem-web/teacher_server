@@ -103,7 +103,7 @@ let TeacherService = class TeacherService {
             students: studentsWithLessons,
         };
     }
-    async getTeacherLessons(userId) {
+    async getTeacherLessons(userId, date, subject, status, grade) {
         if (!(0, class_validator_1.isUUID)(userId)) {
             throw new common_1.BadRequestException('Invalid teacher ID');
         }
@@ -114,9 +114,26 @@ let TeacherService = class TeacherService {
         if (!teacher) {
             throw new common_1.NotFoundException('Teacher not found');
         }
+        const whereClause = { teacher: { id: userId } };
+        if (date) {
+            const targetDate = new Date(date);
+            const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+            const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999);
+            whereClause.scheduledDate = (0, typeorm_2.Between)(startOfDay, endOfDay);
+        }
+        if (subject) {
+            whereClause.subject = subject;
+        }
+        if (status) {
+            whereClause.status = status;
+        }
+        if (grade) {
+            whereClause.grade = grade;
+        }
         const lessons = await this.lessonRepository.find({
-            where: { teacher: { id: userId } },
+            where: whereClause,
             relations: ['teacher', 'students'],
+            order: { startTime: 'ASC' },
         });
         const lessonsWithAttendance = await Promise.all(lessons.map(async (lesson) => {
             const lessonDate = new Date(lesson.scheduledDate);

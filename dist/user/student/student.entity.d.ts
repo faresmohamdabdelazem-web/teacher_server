@@ -7,6 +7,8 @@ export declare class Student {
     phoneNumber?: string;
     parentPhoneNumber?: string;
     grade?: string;
+    profilePhoto?: string;
+    manualEntryId: string;
     createdAt: Date;
     updatedAt: Date;
     teachers: Teacher[];
