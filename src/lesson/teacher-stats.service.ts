@@ -735,9 +735,19 @@ export class TeacherStatsService {
     for (const [dateKey, dayLessons] of lessonsByDate) {
       const lessonDate = new Date(dateKey);
       
-      // Calculate totals for this day
+      // Calculate totals for this day with proper number handling
       const totalLessons = dayLessons.length;
-      const totalStudents = dayLessons.reduce((sum, lesson) => sum + lesson.students.length, 0);
+      
+      // Count unique students across all lessons for this day
+      const uniqueStudentIds = new Set();
+      dayLessons.forEach(lesson => {
+        lesson.students?.forEach(student => {
+          uniqueStudentIds.add(student.id);
+        });
+      });
+      const totalStudents = uniqueStudentIds.size;
+      
+      // Calculate earnings based on completed lessons with actual attendance
       const totalEarnings = dayLessons.reduce((sum, lesson) => {
         if (lesson.status === LessonStatus.COMPLETED) {
           const lessonPrice = parseFloat(lesson.price?.toString() || '0');
@@ -808,6 +818,7 @@ export class TeacherStatsService {
         }
         return sum;
       }, 0);
+      
       const totalAttendance = dayLessons.reduce((sum, lesson) => {
         // Only count present students for attendance
         const presentStudentsCount = attendanceByLesson[lesson.id]?.filter(
@@ -818,6 +829,17 @@ export class TeacherStatsService {
       const completedLessons = dayLessons.filter(l => l.status === LessonStatus.COMPLETED).length;
       const cancelledLessons = dayLessons.filter(l => l.status === LessonStatus.CANCELLED).length;
       const expiredLessons = dayLessons.filter(l => l.status === LessonStatus.EXPIRED).length;
+
+      console.log('TeacherStatsService - Calculated values for', dateKey, ':', {
+        totalLessons,
+        totalStudents,
+        totalEarnings,
+        totalEarningsType: typeof totalEarnings,
+        totalAttendance,
+        completedLessons,
+        cancelledLessons,
+        expiredLessons
+      });
 
       // Create or update daily stats
       let dailyStats = await this.teacherStatsRepository.findOne({
@@ -846,17 +868,27 @@ export class TeacherStatsService {
         });
       }
 
-      // Set the calculated values
+      // Set the calculated values with proper number handling
       dailyStats.totalLessons = totalLessons;
       dailyStats.totalStudents = totalStudents;
       dailyStats.totalAttendance = totalAttendance;
-      dailyStats.totalEarnings = totalEarnings;
+      dailyStats.totalEarnings = totalEarnings; // This should be a number now
       dailyStats.completedLessons = completedLessons;
       dailyStats.cancelledLessons = cancelledLessons;
       dailyStats.expiredLessons = expiredLessons;
       dailyStats.averageEarningsPerLesson = totalLessons > 0 ? totalEarnings / totalLessons : 0;
       dailyStats.averageStudentsPerLesson = totalLessons > 0 ? totalStudents / totalLessons : 0;
       dailyStats.completionRate = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+
+      console.log('TeacherStatsService - Saving daily stats for', dateKey, ':', {
+        totalLessons: dailyStats.totalLessons,
+        totalStudents: dailyStats.totalStudents,
+        totalAttendance: dailyStats.totalAttendance,
+        totalEarnings: dailyStats.totalEarnings,
+        totalEarningsType: typeof dailyStats.totalEarnings,
+        completedLessons: dailyStats.completedLessons,
+        completionRate: dailyStats.completionRate
+      });
 
       await this.teacherStatsRepository.save(dailyStats);
 
@@ -1060,7 +1092,15 @@ export class TeacherStatsService {
       
       // Calculate totals for this day with proper number handling
       const totalLessons = dayLessons.length;
-      const totalStudents = dayLessons.reduce((sum, lesson) => sum + lesson.students.length, 0);
+      
+      // Count unique students across all lessons for this day
+      const uniqueStudentIds = new Set();
+      dayLessons.forEach(lesson => {
+        lesson.students?.forEach(student => {
+          uniqueStudentIds.add(student.id);
+        });
+      });
+      const totalStudents = uniqueStudentIds.size;
       
       // Calculate earnings based on completed lessons with actual attendance
       const totalEarnings = dayLessons.reduce((sum, lesson) => {

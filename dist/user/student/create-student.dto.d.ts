@@ -6,4 +6,6 @@ export declare class CreateStudentDto {
     parentPhoneNumber?: string;
     grade?: string;
     id?: string;
+    profilePhoto?: string;
+    manualEntryId?: string;
 }

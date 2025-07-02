@@ -32,6 +32,9 @@ let StudentController = class StudentController {
     findByPhoneNumber(phoneNumber) {
         return this.studentService.findByPhoneNumber(phoneNumber);
     }
+    findByManualEntryId(manualEntryId) {
+        return this.studentService.findByManualEntryId(manualEntryId);
+    }
     update(id, updateStudentDto) {
         return this.studentService.update(id, updateStudentDto);
     }
@@ -73,6 +76,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], StudentController.prototype, "findByPhoneNumber", null);
+__decorate([
+    (0, common_1.Get)('manualEntryId/:manualEntryId'),
+    __param(0, (0, common_1.Param)('manualEntryId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], StudentController.prototype, "findByManualEntryId", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),

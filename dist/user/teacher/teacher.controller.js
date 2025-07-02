@@ -24,11 +24,15 @@ const user_service_1 = require("../user.service");
 const get_signed_user_decorator_1 = require("../../decorators/get.signed.user.decorator");
 const create_user_dto_1 = require("../dto/create-user.dto");
 const assistant_service_1 = require("../assistant/assistant.service");
+const lesson_entity_1 = require("../../lesson/entities/lesson.entity");
+const student_service_1 = require("../student/student.service");
+const create_student_dto_1 = require("../student/create-student.dto");
 let TeacherController = class TeacherController {
-    constructor(teacherService, userService, assistantService) {
+    constructor(teacherService, userService, assistantService, studentService) {
         this.teacherService = teacherService;
         this.userService = userService;
         this.assistantService = assistantService;
+        this.studentService = studentService;
     }
     create(createTeacherDto, user) {
         return this.teacherService.create(createTeacherDto, user);
@@ -42,8 +46,8 @@ let TeacherController = class TeacherController {
     getTeacherStudents(id) {
         return this.teacherService.getTeacherStudents(id);
     }
-    getTeacherLessons(id) {
-        return this.teacherService.getTeacherLessons(id);
+    getTeacherLessons(id, date, subject, status, grade) {
+        return this.teacherService.getTeacherLessons(id, date, subject, status, grade);
     }
     async getTeacherAssistants(id, user) {
         const currentUser = await this.userService.findOneById(user.id);
@@ -94,6 +98,18 @@ let TeacherController = class TeacherController {
             },
         };
     }
+    async createStudent(createStudentDto, user) {
+        const currentUser = await this.userService.findOneById(user.id);
+        if (!currentUser || currentUser.role !== user_role_enum_1.UserRole.TEACHER) {
+            throw new Error('Only teachers can create students');
+        }
+        const student = await this.studentService.create(createStudentDto);
+        await this.teacherService.addStudentToTeacher(currentUser.userId, student.id);
+        return {
+            message: 'Student created successfully by teacher',
+            student,
+        };
+    }
 };
 exports.TeacherController = TeacherController;
 __decorate([
@@ -132,8 +148,12 @@ __decorate([
     (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.ADMIN, user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT),
     (0, common_1.Get)(':id/lessons'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('date')),
+    __param(2, (0, common_1.Query)('subject')),
+    __param(3, (0, common_1.Query)('status')),
+    __param(4, (0, common_1.Query)('grade')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String, String, String, String]),
     __metadata("design:returntype", void 0)
 ], TeacherController.prototype, "getTeacherLessons", null);
 __decorate([
@@ -171,11 +191,21 @@ __decorate([
     __metadata("design:paramtypes", [create_user_dto_1.CreateUserDto, Object]),
     __metadata("design:returntype", Promise)
 ], TeacherController.prototype, "createAssistant", null);
+__decorate([
+    (0, common_1.Post)('create-student'),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, get_signed_user_decorator_1.GetSignedUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [create_student_dto_1.CreateStudentDto, Object]),
+    __metadata("design:returntype", Promise)
+], TeacherController.prototype, "createStudent", null);
 exports.TeacherController = TeacherController = __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
     (0, common_1.Controller)('teachers'),
     __metadata("design:paramtypes", [teacher_service_1.TeacherService,
         user_service_1.UserService,
-        assistant_service_1.AssistantService])
+        assistant_service_1.AssistantService,
+        student_service_1.StudentService])
 ], TeacherController);
 //# sourceMappingURL=teacher.controller.js.map

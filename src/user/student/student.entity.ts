@@ -7,6 +7,7 @@ import {
   ManyToMany,
   JoinTable,
   BeforeInsert,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Teacher } from '../teacher/teacher.entity';
 import { Lesson } from '../../lesson/entities/lesson.entity';
@@ -31,6 +32,12 @@ export class Student {
 
   @Column({ nullable: true })
   grade?: string;
+
+  @Column({ nullable: true })
+  profilePhoto?: string;
+
+  @Column({ unique: true, nullable: true })
+  manualEntryId: string;
 
   @CreateDateColumn()
   createdAt: Date;

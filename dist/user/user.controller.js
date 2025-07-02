@@ -56,15 +56,10 @@ let UserController = class UserController {
     }
     async createStudentByAssistant(createStudentData, user) {
         const currentUser = await this.userService.findOneById(user.id);
-        if (!currentUser || currentUser.role !== user_role_enum_1.UserRole.ASSISTANT) {
+        if (!currentUser || currentUser.role !== user_role_enum_1.UserRole.ASSISTANT && currentUser.role !== user_role_enum_1.UserRole.TEACHER) {
             throw new Error('Only assistants can create students');
         }
-        const student = await this.studentService.create({
-            firstName: createStudentData.firstName,
-            lastName: createStudentData.lastName,
-            phoneNumber: createStudentData.phoneNumber,
-            parentPhoneNumber: createStudentData.parentPhoneNumber,
-        });
+        const student = await this.studentService.create(createStudentData);
         const assistant = await this.assistantService.findByUserId(currentUser.userId);
         if (assistant && assistant.teacherId) {
             await this.teacherService.addStudentToTeacher(assistant.teacherId, student.id);

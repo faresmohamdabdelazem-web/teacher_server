@@ -2,7 +2,7 @@ import { Repository } from 'typeorm';
 import { Teacher } from './teacher.entity';
 import { Student } from '../student/student.entity';
 import { CreateTeacherDto } from './create-teacher.dto';
-import { Lesson } from '../../lesson/entities/lesson.entity';
+import { Lesson, LessonStatus } from '../../lesson/entities/lesson.entity';
 import { User } from '../../user/entities/user.entity';
 import { LessonAttendance } from '../../lesson/entities/lesson-attendance.entity';
 export declare class TeacherService {
@@ -22,7 +22,7 @@ export declare class TeacherService {
     getTeacherStudents(userId: string): Promise<{
         students: any[];
     }>;
-    getTeacherLessons(userId: string): Promise<{
+    getTeacherLessons(userId: string, date?: string, subject?: string, status?: LessonStatus, grade?: string): Promise<{
         lessons: Lesson[];
     }>;
     createWithUser(user: User): Promise<Teacher>;

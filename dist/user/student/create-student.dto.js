@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateStudentDto = void 0;
 const class_validator_1 = require("class-validator");
 const is_ulid_decorator_1 = require("../../decorators/is.ulid.decorator");
+const isBase64OrURL_decorator_1 = require("../../decorators/isBase64OrURL.decorator");
 class CreateStudentDto {
 }
 exports.CreateStudentDto = CreateStudentDto;
@@ -50,4 +51,14 @@ __decorate([
     (0, is_ulid_decorator_1.IsULID)(),
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, isBase64OrURL_decorator_1.IsBase64OrURL)(),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "profilePhoto", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "manualEntryId", void 0);
 //# sourceMappingURL=create-student.dto.js.map

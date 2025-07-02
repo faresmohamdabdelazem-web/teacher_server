@@ -595,7 +595,13 @@ let TeacherStatsService = class TeacherStatsService {
         for (const [dateKey, dayLessons] of lessonsByDate) {
             const lessonDate = new Date(dateKey);
             const totalLessons = dayLessons.length;
-            const totalStudents = dayLessons.reduce((sum, lesson) => sum + lesson.students.length, 0);
+            const uniqueStudentIds = new Set();
+            dayLessons.forEach(lesson => {
+                lesson.students?.forEach(student => {
+                    uniqueStudentIds.add(student.id);
+                });
+            });
+            const totalStudents = uniqueStudentIds.size;
             const totalEarnings = dayLessons.reduce((sum, lesson) => {
                 if (lesson.status === lesson_entity_1.LessonStatus.COMPLETED) {
                     const lessonPrice = parseFloat(lesson.price?.toString() || '0');
@@ -652,6 +658,16 @@ let TeacherStatsService = class TeacherStatsService {
             const completedLessons = dayLessons.filter(l => l.status === lesson_entity_1.LessonStatus.COMPLETED).length;
             const cancelledLessons = dayLessons.filter(l => l.status === lesson_entity_1.LessonStatus.CANCELLED).length;
             const expiredLessons = dayLessons.filter(l => l.status === lesson_entity_1.LessonStatus.EXPIRED).length;
+            console.log('TeacherStatsService - Calculated values for', dateKey, ':', {
+                totalLessons,
+                totalStudents,
+                totalEarnings,
+                totalEarningsType: typeof totalEarnings,
+                totalAttendance,
+                completedLessons,
+                cancelledLessons,
+                expiredLessons
+            });
             let dailyStats = await this.teacherStatsRepository.findOne({
                 where: {
                     teacherId,
@@ -686,6 +702,15 @@ let TeacherStatsService = class TeacherStatsService {
             dailyStats.averageEarningsPerLesson = totalLessons > 0 ? totalEarnings / totalLessons : 0;
             dailyStats.averageStudentsPerLesson = totalLessons > 0 ? totalStudents / totalLessons : 0;
             dailyStats.completionRate = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+            console.log('TeacherStatsService - Saving daily stats for', dateKey, ':', {
+                totalLessons: dailyStats.totalLessons,
+                totalStudents: dailyStats.totalStudents,
+                totalAttendance: dailyStats.totalAttendance,
+                totalEarnings: dailyStats.totalEarnings,
+                totalEarningsType: typeof dailyStats.totalEarnings,
+                completedLessons: dailyStats.completedLessons,
+                completionRate: dailyStats.completionRate
+            });
             await this.teacherStatsRepository.save(dailyStats);
             await this.updateWeeklyStatsFromDaily(teacherId, lessonDate);
             await this.updateMonthlyStatsFromDaily(teacherId, lessonDate);
@@ -840,7 +865,13 @@ let TeacherStatsService = class TeacherStatsService {
             const lessonDate = new Date(dateKey);
             console.log('TeacherStatsService - Processing date:', dateKey, 'with lessons:', dayLessons.length);
             const totalLessons = dayLessons.length;
-            const totalStudents = dayLessons.reduce((sum, lesson) => sum + lesson.students.length, 0);
+            const uniqueStudentIds = new Set();
+            dayLessons.forEach(lesson => {
+                lesson.students?.forEach(student => {
+                    uniqueStudentIds.add(student.id);
+                });
+            });
+            const totalStudents = uniqueStudentIds.size;
             const totalEarnings = dayLessons.reduce((sum, lesson) => {
                 if (lesson.status === lesson_entity_1.LessonStatus.COMPLETED) {
                     const lessonPrice = parseFloat(lesson.price?.toString() || '0');

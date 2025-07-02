@@ -561,22 +561,34 @@ let LessonService = class LessonService {
             throw new common_1.ForbiddenException('Only teachers and assistants can mark attendance');
         }
         const lesson = await this.findOne(markAttendanceDto.lessonId);
+        if (lesson.lesson.status !== lesson_entity_1.LessonStatus.ATTENDANCE_OPEN && lesson.lesson.status !== lesson_entity_1.LessonStatus.IN_PROGRESS) {
+            throw new common_1.BadRequestException('Attendance can only be marked when lesson is open for attendance or in progress');
+        }
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const scheduledDate = new Date(lesson.lesson.scheduledDate);
         const lessonDate = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate());
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
+        if (lessonDate < yesterday) {
+            throw new common_1.BadRequestException('Attendance cannot be marked for lessons that are more than 1 day in the past');
+        }
         const students = await this.getLessonStudents(markAttendanceDto.lessonId);
         const isEnrolled = students.students.some(student => student.id === markAttendanceDto.studentId);
         if (!isEnrolled) {
             throw new common_1.BadRequestException('Student is not enrolled in this lesson');
         }
-        if (lessonDate < yesterday) {
-            throw new common_1.BadRequestException('Attendance cannot be marked for lessons that are more than 1 day in the past');
-        }
-        if (lesson.lesson.status !== lesson_entity_1.LessonStatus.ATTENDANCE_OPEN && lesson.lesson.status !== lesson_entity_1.LessonStatus.IN_PROGRESS) {
-            throw new common_1.BadRequestException('Attendance can only be marked when lesson is open for attendance or in progress');
+        const startOfDay = new Date(lesson.lesson.scheduledDate.getFullYear(), lesson.lesson.scheduledDate.getMonth(), lesson.lesson.scheduledDate.getDate());
+        const endOfDay = new Date(lesson.lesson.scheduledDate.getFullYear(), lesson.lesson.scheduledDate.getMonth(), lesson.lesson.scheduledDate.getDate(), 23, 59, 59, 999);
+        const existingAttendance = await this.attendanceRepository.findOne({
+            where: {
+                lessonId: markAttendanceDto.lessonId,
+                studentId: markAttendanceDto.studentId,
+                attendanceTime: (0, typeorm_2.Between)(startOfDay, endOfDay)
+            }
+        });
+        if (existingAttendance) {
+            throw new common_1.ConflictException('Attendance for this student in this lesson already exists for this occurrence');
         }
         const currentTime = new Date();
         const attendance = this.attendanceRepository.create({
@@ -1099,12 +1111,18 @@ let LessonService = class LessonService {
         const attendanceData = await this.attendanceRepository.find({
             where: { lessonId: (0, typeorm_2.In)(lessonIds) }
         });
+        const uniqueStudentIds = new Set();
+        lessons.forEach(lesson => {
+            lesson.students?.forEach(student => {
+                uniqueStudentIds.add(student.id);
+            });
+        });
         return {
             teacherId,
             startDate,
             endDate,
             totalLessons: lessons.length,
-            totalStudents: lessons.reduce((sum, lesson) => sum + lesson.students.length, 0),
+            totalStudents: uniqueStudentIds.size,
             totalAttendance: attendanceData.length,
             totalEarnings: lessons.reduce((sum, lesson) => sum + (parseFloat(lesson.price?.toString() || '0')), 0),
             lessons: lessons.map(lesson => {

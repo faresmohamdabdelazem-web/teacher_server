@@ -45,6 +45,14 @@ __decorate([
     __metadata("design:type", String)
 ], Student.prototype, "grade", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Student.prototype, "profilePhoto", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ unique: true, nullable: true }),
+    __metadata("design:type", String)
+], Student.prototype, "manualEntryId", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], Student.prototype, "createdAt", void 0);
