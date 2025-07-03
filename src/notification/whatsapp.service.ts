@@ -68,4 +68,26 @@ export class WhatsAppService {
             body: message,
         });
     }
+
+    async sendPresentNotification(
+        parentPhoneNumber: string,
+        studentName: string,
+        lessonTitle: string,
+        lessonDate: Date,
+        subject: string
+    ): Promise<boolean> {
+        const formattedDate = lessonDate.toLocaleDateString('ar-SA', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        });
+
+        const message = `عزيزي ولي الأمر،\n\nنود إعلامكم أن الطالب ${studentName} قد حضر الدرس التالي بنجاح:\n\n📚 المادة: ${subject}\n📖 الدرس: ${lessonTitle}\n📅 التاريخ: ${formattedDate}\n\nشكراً لكم على متابعتكم وحرصكم على انتظام الطالب.\n\nفريق إدارة المدرسة`;
+
+        return this.sendMessage({
+            to: `+2${parentPhoneNumber}`,
+            body: message,
+        });
+    }
 } 

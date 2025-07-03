@@ -859,6 +859,23 @@ export class LessonService {
     // Update teacher stats
     await this.teacherStatsService.onAttendanceMarked(markAttendanceDto.lessonId);
 
+    // Send WhatsApp message to parent if present
+    if (markAttendanceDto.status === AttendanceStatus.PRESENT) {
+      // Fetch student and lesson details
+      const student = await this.studentRepository.findOne({ where: { id: markAttendanceDto.studentId } });
+      const lessonDetails = await this.lessonRepository.findOne({ where: { id: markAttendanceDto.lessonId } });
+      if (student && student.parentPhoneNumber && lessonDetails) {
+        const studentName = `${student.firstName} ${student.lastName}`;
+        await this.whatsAppService.sendPresentNotification(
+          student.parentPhoneNumber,
+          studentName,
+          lessonDetails.title,
+          lessonDetails.scheduledDate,
+          lessonDetails.subject
+        );
+      }
+    }
+
     return { attendance: savedAttendance };
   }
 
