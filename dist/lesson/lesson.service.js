@@ -311,6 +311,9 @@ let LessonService = class LessonService {
         return {
             lessonId: lessonId,
             studentId: studentId,
+            studentPhoneNumber: student.phoneNumber || null,
+            firstName: student.firstName,
+            lastName: student.lastName,
         };
     }
     async transferStudentToLesson(studentId, toLessonId, userId, userRole) {
@@ -601,6 +604,14 @@ let LessonService = class LessonService {
         });
         const savedAttendance = await this.attendanceRepository.save(attendance);
         await this.teacherStatsService.onAttendanceMarked(markAttendanceDto.lessonId);
+        if (markAttendanceDto.status === lesson_attendance_entity_1.AttendanceStatus.PRESENT) {
+            const student = await this.studentRepository.findOne({ where: { id: markAttendanceDto.studentId } });
+            const lessonDetails = await this.lessonRepository.findOne({ where: { id: markAttendanceDto.lessonId } });
+            if (student && student.parentPhoneNumber && lessonDetails) {
+                const studentName = `${student.firstName} ${student.lastName}`;
+                await this.whatsAppService.sendPresentNotification(student.parentPhoneNumber, studentName, lessonDetails.title, lessonDetails.scheduledDate, lessonDetails.subject);
+            }
+        }
         return { attendance: savedAttendance };
     }
     async getLessonAttendance(lessonId, date) {

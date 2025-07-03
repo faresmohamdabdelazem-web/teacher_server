@@ -64,6 +64,37 @@ let WhatsAppService = WhatsAppService_1 = class WhatsAppService {
             body: message,
         });
     }
+    async sendPresentNotification(parentPhoneNumber, studentName, lessonTitle, lessonDate, subject) {
+        const formattedDate = lessonDate.toLocaleDateString('ar-SA', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        });
+        const message = `عزيزي ولي الأمر،\n\nنود إعلامكم أن الطالب ${studentName} قد حضر الدرس التالي بنجاح:\n\n📚 المادة: ${subject}\n📖 الدرس: ${lessonTitle}\n📅 التاريخ: ${formattedDate}\n\nشكراً لكم على متابعتكم وحرصكم على انتظام الطالب.\n\nفريق إدارة المدرسة`;
+        return this.sendMessage({
+            to: `+2${parentPhoneNumber}`,
+            body: message,
+        });
+    }
+    async sendImageBarcode(to, base64Image) {
+        console.log(to, base64Image);
+        const url = `https://api.ultramsg.com/${this.instanceId}/messages/image`;
+        try {
+            const response = await axios_1.default.post(url, {
+                token: this.token,
+                to,
+                image: base64Image,
+                caption: "هذا هو باركود الحضور الخاص بك. يرجى حفظه وإحضاره معك ليتم مسحه عند حضور الدروس.",
+            });
+            this.logger.log(`WhatsApp image sent successfully to ${to}`);
+            return true;
+        }
+        catch (error) {
+            this.logger.error(`Failed to send WhatsApp image to ${to}:`, error.message);
+            return false;
+        }
+    }
 };
 exports.WhatsAppService = WhatsAppService;
 exports.WhatsAppService = WhatsAppService = WhatsAppService_1 = __decorate([

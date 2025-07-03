@@ -67,6 +67,9 @@ export declare class LessonController {
     addStudentToLesson(addStudentDto: AddStudentToLessonDto, user: any): Promise<{
         lessonId: string;
         studentId: string;
+        studentPhoneNumber: string | null;
+        firstName: string;
+        lastName: string;
     }>;
     transferStudentToLesson(transferStudentDto: TransferStudentDto, user: any): Promise<{
         message: string;

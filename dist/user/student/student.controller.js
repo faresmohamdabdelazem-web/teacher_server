@@ -16,9 +16,15 @@ exports.StudentController = void 0;
 const common_1 = require("@nestjs/common");
 const student_service_1 = require("./student.service");
 const create_student_dto_1 = require("./create-student.dto");
+const whatsapp_service_1 = require("../../notification/whatsapp.service");
+const auth_guard_1 = require("../../auth/guard/auth.guard");
+const role_guard_1 = require("../../auth/guard/role.guard");
+const role_decorator_1 = require("../../decorators/role.decorator");
+const user_role_enum_1 = require("../user.role.enum");
 let StudentController = class StudentController {
-    constructor(studentService) {
+    constructor(studentService, whatsAppService) {
         this.studentService = studentService;
+        this.whatsAppService = whatsAppService;
     }
     create(createStudentDto) {
         return this.studentService.create(createStudentDto);
@@ -46,6 +52,12 @@ let StudentController = class StudentController {
     }
     getStudentLessons(id) {
         return this.studentService.getStudentLessons(id);
+    }
+    async sendBarcodeToPhone(body) {
+        const { phoneNumber, base64Image } = body;
+        const to = phoneNumber.startsWith('+') ? phoneNumber : `+2${phoneNumber}`;
+        const result = await this.whatsAppService.sendImageBarcode(to, base64Image);
+        return { success: result, message: "Barcode sent successfully" };
     }
 };
 exports.StudentController = StudentController;
@@ -112,8 +124,18 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], StudentController.prototype, "getStudentLessons", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT),
+    (0, common_1.Post)('send-barcode'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], StudentController.prototype, "sendBarcodeToPhone", null);
 exports.StudentController = StudentController = __decorate([
     (0, common_1.Controller)('students'),
-    __metadata("design:paramtypes", [student_service_1.StudentService])
+    __metadata("design:paramtypes", [student_service_1.StudentService,
+        whatsapp_service_1.WhatsAppService])
 ], StudentController);
 //# sourceMappingURL=student.controller.js.map

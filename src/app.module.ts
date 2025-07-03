@@ -13,6 +13,7 @@ import { UserService } from './user/user.service';
 import { NotificationModule } from './notification/notification.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LessonModule } from './lesson/lesson.module';
+import { AdminController } from './admin/admin.controller';
 
 @Module({
   imports: [
@@ -56,7 +57,7 @@ import { LessonModule } from './lesson/lesson.module';
     NotificationModule,
     LessonModule,
   ],  
-  controllers: [],
+  controllers: [AdminController],
 })
 export class AppModule {
   constructor(private readonly userService: UserService) {}

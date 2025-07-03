@@ -368,7 +368,7 @@ export class LessonService {
   }
 
   // Only assistants can add students to lessons
-  async addStudentToLesson(lessonId: string, studentId: string, userId: string, userRole: string): Promise<{ lessonId: string, studentId: string }> {
+  async addStudentToLesson(lessonId: string, studentId: string, userId: string, userRole: string): Promise<{ lessonId: string, studentId: string, studentPhoneNumber: string | null, firstName: string, lastName: string }> {
     // Validate that only assistants can add students to lessons
     if (userRole !== UserRole.ASSISTANT && userRole !== UserRole.TEACHER) {
       throw new ForbiddenException('Only assistants and teachers can add students to lessons');
@@ -418,10 +418,13 @@ export class LessonService {
     // Update teacher stats
     await this.teacherStatsService.onStudentAddedToLesson(lessonId);
 
-    // Return only lessonId and studentId
+    // Return lessonId, studentId, studentPhoneNumber, firstName, lastName
     return {
       lessonId: lessonId,
       studentId: studentId,
+      studentPhoneNumber: student.phoneNumber || null,
+      firstName: student.firstName,
+      lastName: student.lastName,
     };
   }
 

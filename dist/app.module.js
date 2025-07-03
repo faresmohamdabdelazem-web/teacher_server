@@ -25,6 +25,7 @@ const user_service_1 = require("./user/user.service");
 const notification_module_1 = require("./notification/notification.module");
 const typeorm_1 = require("@nestjs/typeorm");
 const lesson_module_1 = require("./lesson/lesson.module");
+const admin_controller_1 = require("./admin/admin.controller");
 let AppModule = class AppModule {
     constructor(userService) {
         this.userService = userService;
@@ -83,7 +84,7 @@ exports.AppModule = AppModule = __decorate([
             notification_module_1.NotificationModule,
             lesson_module_1.LessonModule,
         ],
-        controllers: [],
+        controllers: [admin_controller_1.AdminController],
     }),
     __metadata("design:paramtypes", [user_service_1.UserService])
 ], AppModule);

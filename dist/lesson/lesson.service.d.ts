@@ -48,6 +48,9 @@ export declare class LessonService {
     addStudentToLesson(lessonId: string, studentId: string, userId: string, userRole: string): Promise<{
         lessonId: string;
         studentId: string;
+        studentPhoneNumber: string | null;
+        firstName: string;
+        lastName: string;
     }>;
     transferStudentToLesson(studentId: string, toLessonId: string, userId: string, userRole: string): Promise<{
         message: string;

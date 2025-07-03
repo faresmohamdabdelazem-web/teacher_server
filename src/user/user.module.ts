@@ -17,6 +17,8 @@ import { AssistantService } from './assistant/assistant.service';
 import { TeacherController } from './teacher/teacher.controller';
 import { StudentController } from './student/student.controller';
 import { AuthModule } from 'src/auth/auth.module';
+import { NotificationModule } from 'src/notification/notification.module';
+import { WhatsAppService } from 'src/notification/whatsapp.service';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { AuthModule } from 'src/auth/auth.module';
       LessonAttendance,
     ]),
     CloudinaryModule,
+    NotificationModule,
     forwardRef(() => AuthModule),
   ],
   controllers: [
@@ -43,6 +46,7 @@ import { AuthModule } from 'src/auth/auth.module';
     TeacherService,
     StudentService,
     AssistantService,
+    WhatsAppService,
   ],
   exports: [
     UserService, 
@@ -50,6 +54,7 @@ import { AuthModule } from 'src/auth/auth.module';
     TeacherService,
     StudentService,
     AssistantService,
+    WhatsAppService,
   ],
 })
 export class UserModule {}

@@ -26,6 +26,8 @@ const assistant_service_1 = require("./assistant/assistant.service");
 const teacher_controller_1 = require("./teacher/teacher.controller");
 const student_controller_1 = require("./student/student.controller");
 const auth_module_1 = require("../auth/auth.module");
+const notification_module_1 = require("../notification/notification.module");
+const whatsapp_service_1 = require("../notification/whatsapp.service");
 let UserModule = class UserModule {
 };
 exports.UserModule = UserModule;
@@ -41,6 +43,7 @@ exports.UserModule = UserModule = __decorate([
                 lesson_attendance_entity_1.LessonAttendance,
             ]),
             cloudinary_module_1.CloudinaryModule,
+            notification_module_1.NotificationModule,
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
         ],
         controllers: [
@@ -55,6 +58,7 @@ exports.UserModule = UserModule = __decorate([
             teacher_service_1.TeacherService,
             student_service_1.StudentService,
             assistant_service_1.AssistantService,
+            whatsapp_service_1.WhatsAppService,
         ],
         exports: [
             user_service_1.UserService,
@@ -62,6 +66,7 @@ exports.UserModule = UserModule = __decorate([
             teacher_service_1.TeacherService,
             student_service_1.StudentService,
             assistant_service_1.AssistantService,
+            whatsapp_service_1.WhatsAppService,
         ],
     })
 ], UserModule);

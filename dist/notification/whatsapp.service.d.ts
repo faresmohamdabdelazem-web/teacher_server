@@ -12,4 +12,6 @@ export declare class WhatsAppService {
     constructor(configService: ConfigService);
     sendMessage(message: WhatsAppMessage): Promise<boolean>;
     sendAbsenceNotification(parentPhoneNumber: string, studentName: string, lessonTitle: string, lessonDate: Date, subject: string): Promise<boolean>;
+    sendPresentNotification(parentPhoneNumber: string, studentName: string, lessonTitle: string, lessonDate: Date, subject: string): Promise<boolean>;
+    sendImageBarcode(to: string, base64Image: string): Promise<boolean>;
 }

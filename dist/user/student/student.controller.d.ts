@@ -1,8 +1,10 @@
 import { StudentService } from './student.service';
 import { CreateStudentDto } from './create-student.dto';
+import { WhatsAppService } from '../../notification/whatsapp.service';
 export declare class StudentController {
     private readonly studentService;
-    constructor(studentService: StudentService);
+    private readonly whatsAppService;
+    constructor(studentService: StudentService, whatsAppService: WhatsAppService);
     create(createStudentDto: CreateStudentDto): Promise<import("./student.entity").Student>;
     findAll(): Promise<{
         students: import("./student.entity").Student[];
@@ -23,5 +25,12 @@ export declare class StudentController {
     }>;
     getStudentLessons(id: string): Promise<{
         lessons: any[];
+    }>;
+    sendBarcodeToPhone(body: {
+        phoneNumber: string;
+        base64Image: string;
+    }): Promise<{
+        success: boolean;
+        message: string;
     }>;
 }
