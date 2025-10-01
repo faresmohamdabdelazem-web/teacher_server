@@ -924,13 +924,8 @@ let LessonService = class LessonService {
             startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
             endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
         }
-        console.log('Teacher today lessons - Date range:', {
-            startOfDay: startOfDay.toISOString(),
-            endOfDay: endOfDay.toISOString(),
-            teacherId,
-            dateProvided: !!date,
-            providedDate: date
-        });
+        if (!teacherId)
+            throw new common_1.NotFoundException("Teacher Id Not Sent");
         const whereClause = {
             teacherId: teacherId,
             scheduledDate: (0, typeorm_2.Between)(startOfDay, endOfDay),
@@ -941,7 +936,6 @@ let LessonService = class LessonService {
         if (status) {
             whereClause.status = status;
         }
-        console.log('Teacher today lessons - Where clause:', whereClause);
         const lessons = await this.lessonRepository.find({
             where: whereClause,
             relations: ['teacher', 'students'],
@@ -981,6 +975,8 @@ let LessonService = class LessonService {
         return { lessons: lessonsWithAttendance };
     }
     async calculateTeacherStats(teacherId, period, startDate, endDate) {
+        if (!teacherId)
+            throw new common_1.NotFoundException("No TeacherId Found");
         const teacher = await this.teacherRepository.findOne({ where: { id: teacherId } });
         if (!teacher) {
             throw new common_1.NotFoundException('Teacher not found');

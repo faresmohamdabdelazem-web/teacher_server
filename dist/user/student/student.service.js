@@ -19,61 +19,62 @@ const typeorm_2 = require("typeorm");
 const student_entity_1 = require("./student.entity");
 const cloudinary_service_1 = require("../../cloudinary/cloudinary.service");
 const hatly_constants_1 = require("../../hatly.constants");
+const installment_service_1 = require("../../Installment/installment.service");
 let StudentService = class StudentService {
-    constructor(studentRepository, cloudinary) {
+    constructor(studentRepository, cloudinary, installmentPay) {
         this.studentRepository = studentRepository;
         this.cloudinary = cloudinary;
+        this.installmentPay = installmentPay;
     }
     async create(createStudentDto) {
-        if (createStudentDto.phoneNumber) {
-            const existingStudent = await this.studentRepository.findOne({
-                where: { phoneNumber: createStudentDto.phoneNumber },
-            });
-            if (existingStudent) {
-                throw new common_1.ConflictException('Student with this phone number already exists');
-            }
+        const totalAmount = createStudentDto.totalAmount || 0;
+        const downPayment = createStudentDto.downPayment || 0;
+        const remainingDownPayment = createStudentDto.remainingDownPayment ?? downPayment;
+        if (totalAmount <= downPayment) {
+            throw new common_1.BadRequestException(`قيمة المبلغ الكلي (${totalAmount}) يجب أن تكون أكبر من المقدم (${downPayment})`);
         }
-        let manualEntryId = createStudentDto.manualEntryId;
-        if (manualEntryId) {
-            const existingManualId = await this.studentRepository.findOne({ where: { manualEntryId } });
-            if (existingManualId) {
-                throw new common_1.ConflictException('Student with this manualEntryId already exists');
-            }
-        }
-        else {
-            const maxRetries = 10;
-            let retryCount = 0;
-            let isUnique = false;
-            while (!isUnique && retryCount < maxRetries) {
-                manualEntryId = Math.floor(1000000 + Math.random() * 9000000).toString();
-                const existingManualId = await this.studentRepository.findOne({ where: { manualEntryId } });
-                if (!existingManualId) {
-                    isUnique = true;
-                }
-                retryCount++;
-            }
-            if (!isUnique) {
-                throw new common_1.ConflictException('Unable to generate unique manualEntryId after maximum retries');
-            }
-        }
-        let profilePhotoUrl = createStudentDto.profilePhoto;
-        console.log(profilePhotoUrl);
-        if (profilePhotoUrl && !profilePhotoUrl.startsWith('http')) {
-            profilePhotoUrl = await this.cloudinary.uploadBase64(profilePhotoUrl, hatly_constants_1.PROFILE_PHOTO_FILE, `student_${createStudentDto.phoneNumber || Date.now()}`);
+        if (remainingDownPayment >= downPayment) {
+            throw new common_1.BadRequestException(`باقي المقدم (${remainingDownPayment}) يجب أن يكون اصغر من او يساوي المقدم (${downPayment})`);
         }
         const student = this.studentRepository.create({
             ...createStudentDto,
-            profilePhoto: profilePhotoUrl,
-            manualEntryId,
+            remainingDownPayment,
+            installmentStage: 0,
         });
-        console.log(student);
         const savedStudent = await this.studentRepository.save(student);
-        console.log(savedStudent);
+        const remainingAmount = totalAmount - downPayment;
+        const monthlyInstallment = remainingAmount / 12;
+        const installments = [];
+        if (remainingDownPayment > 0) {
+            const installment = await this.installmentPay.create({
+                studentId: savedStudent.id,
+                installmentNumber: 0,
+                amount: remainingDownPayment,
+                monthNumber: 0,
+                cashReceiver: createStudentDto.cashReceiver || 'Admin',
+                installmentStage: 0,
+            });
+            installments.push(installment);
+            student.remainingDownPayment = 0;
+        }
+        for (let i = 1; i <= 12; i++) {
+            const installment = await this.installmentPay.create({
+                studentId: savedStudent.id,
+                installmentNumber: i,
+                amount: monthlyInstallment,
+                monthNumber: i,
+                cashReceiver: createStudentDto.cashReceiver || 'Admin',
+                installmentStage: 1,
+            });
+            installments.push(installment);
+        }
+        student.installmentStage = 1;
+        await this.studentRepository.save(student);
         return savedStudent;
     }
     async findAll() {
         const students = await this.studentRepository.find({
-            relations: ['teachers', 'lessons'],
+            relations: ['teachers', 'lessons', 'installments'],
         });
         return { students };
     }
@@ -85,7 +86,7 @@ let StudentService = class StudentService {
         if (!student) {
             throw new common_1.NotFoundException('Student not found');
         }
-        return { student };
+        return student;
     }
     async findByPhoneNumber(phoneNumber) {
         const student = await this.studentRepository.findOne({
@@ -109,20 +110,37 @@ let StudentService = class StudentService {
     }
     async update(id, updateStudentDto) {
         const student = await this.findOne(id);
-        if (updateStudentDto.id && updateStudentDto.id !== student.student.id) {
+        if (updateStudentDto.phoneNumber && updateStudentDto.phoneNumber !== student.phoneNumber) {
             const existingStudent = await this.studentRepository.findOne({
-                where: { id: updateStudentDto.id },
+                where: { phoneNumber: updateStudentDto.phoneNumber },
             });
-            if (!existingStudent) {
-                throw new common_1.ConflictException('Student with this studentId not found');
+            if (existingStudent) {
+                throw new common_1.ConflictException('Student with this phone number already exists');
             }
         }
-        Object.assign(student.student, updateStudentDto);
-        return await this.studentRepository.save(student.student);
+        if (updateStudentDto.manualEntryId && updateStudentDto.manualEntryId !== student.manualEntryId) {
+            const existingManualId = await this.studentRepository.findOne({
+                where: { manualEntryId: updateStudentDto.manualEntryId },
+            });
+            if (existingManualId) {
+                throw new common_1.ConflictException('Student with this manualEntryId already exists');
+            }
+        }
+        if (updateStudentDto.profilePhoto && !updateStudentDto.profilePhoto.startsWith('http')) {
+            updateStudentDto.profilePhoto = await this.cloudinary.uploadBase64(updateStudentDto.profilePhoto, hatly_constants_1.PROFILE_PHOTO_FILE, `student_${updateStudentDto.phoneNumber || Date.now()}`);
+        }
+        if (updateStudentDto.notes) {
+            updateStudentDto.notes = updateStudentDto.notes.map(note => ({
+                ...note,
+                createdAt: note.createdAt || new Date(),
+            }));
+        }
+        Object.assign(student, updateStudentDto);
+        return await this.studentRepository.save(student);
     }
     async remove(id) {
         const student = await this.findOne(id);
-        await this.studentRepository.remove(student.student);
+        await this.studentRepository.remove(student);
     }
     async getStudentTeachers(id) {
         const student = await this.studentRepository.findOne({
@@ -160,6 +178,7 @@ exports.StudentService = StudentService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(student_entity_1.Student)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        cloudinary_service_1.CloudinaryService])
+        cloudinary_service_1.CloudinaryService,
+        installment_service_1.InstallmentService])
 ], StudentService);
 //# sourceMappingURL=student.service.js.map

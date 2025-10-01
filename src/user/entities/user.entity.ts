@@ -9,7 +9,7 @@ import {
   OneToOne,
   JoinColumn,
 } from 'typeorm';
-// import { ulid } from 'ulid';
+import { ulid } from 'ulid';
 import { Exclude, Expose } from 'class-transformer';
 import { UserRole } from '../user.role.enum';
 

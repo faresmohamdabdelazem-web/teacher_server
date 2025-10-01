@@ -5,12 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToMany,
-  JoinTable,
+  OneToMany,
   BeforeInsert,
-  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Teacher } from '../teacher/teacher.entity';
 import { Lesson } from '../../lesson/entities/lesson.entity';
+import { Installment } from 'src/Installment/entities/installment.entity';
 import { ulid } from 'ulid';
 
 @Entity('students')
@@ -24,20 +24,65 @@ export class Student {
   @Column()
   lastName: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   phoneNumber?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
+  whatsapp?: string;
+
+  @Column({ type: 'varchar', nullable: true })
   parentPhoneNumber?: string;
 
   @Column({ nullable: true })
+  section?: string;
+
+  @Column({ nullable: true })
   grade?: string;
+
+
+
+  @Column({ nullable: true })
+  nationalId?: string;
+
+  @Column({ nullable: true })
+  location?: string;
+
+  @Column({ nullable: true })
+  branchId?: string;
+
+  @Column({ type: 'jsonb', nullable: true, default: [] })
+  notes: { text: string; createdAt: Date }[];
 
   @Column({ nullable: true })
   profilePhoto?: string;
 
   @Column({ unique: true, nullable: true })
   manualEntryId: string;
+
+  @Column({ type: 'int', default: 0 })
+  installmentStage: number;
+  //  المبلغ الكلي
+  @Column({ type: 'float', nullable: true })
+  totalAmount?: number;
+
+  //  المقدم
+  @Column({ type: 'float', nullable: true })
+  downPayment?: number;
+
+  //  باقي المقدم
+  @Column({ type: 'float', nullable: true })
+  remainingDownPayment?: number;
+
+  //  من خلال الشخص
+  @Column({ type: 'varchar', nullable: true })
+  throughPerson?: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  cashReceiver?: string;
+
+  //  رقم الإيصال
+  @Column({ nullable: true })
+  receiptNumber?: string;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -49,12 +94,18 @@ export class Student {
   @ManyToMany(() => Teacher, (teacher) => teacher.students)
   teachers: Teacher[];
 
-  // Relationship with Lessons
+
   @ManyToMany(() => Lesson, (lesson) => lesson.students)
   lessons: Lesson[];
+
+
+  @OneToMany(() => Installment, (installment) => installment.student, {
+    cascade: true,
+  })
+  installments: Installment[];
 
   @BeforeInsert()
   generateId() {
     this.id = ulid();
   }
-} 
+}

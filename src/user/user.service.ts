@@ -40,23 +40,19 @@ export class UserService {
   ) { }
 
   async create(createUserDto: CreateUserDto) {
-    console.log('Creating user with password:', createUserDto.password);
 
-    // Transform the DTO to ensure decorators are applied
+
+
     const transformedDto = plainToClass(CreateUserDto, createUserDto);
-    console.log('Transformed DTO password:', transformedDto.password);
-
     const user = this.userRepository.create(transformedDto);
-    console.log('User created with password:', user.password);
-
     const savedUser = await this.userRepository.save(user).catch((error) => {
-      console.log(error);
+
       if (error.detail.includes(user.email) && error.code == '23505')
         throw new ConflictException(`Email '${user.email}' is already exists`);
       throw new InternalServerErrorException();
     });
-    
-    console.log('User saved with password:', savedUser.password);
+
+
 
     // Create Teacher or Assistant entity if applicable
     if (savedUser.role === UserRole.TEACHER) {
@@ -68,11 +64,7 @@ export class UserService {
     return savedUser;
   }
 
-  /**
-   * Converts a base64 string to a Buffer
-   * @param base64String - The base64 string to convert
-   * @returns Buffer containing the decoded data
-   */
+ 
   private base64ToBuffer(base64String: string): Buffer {
     // Remove data URL prefix if present
     const base64Data = base64String.replace(/^data:image\/[a-z]+;base64,/, '');
@@ -194,8 +186,8 @@ export class UserService {
     Object.assign(user, { ...updateUserDto });
 
     const savedUser = await this.userRepository.save(user);
-  
-    
+
+
     return { user: savedUser };
   }
 
@@ -210,7 +202,7 @@ export class UserService {
         role: true,
         createdAt: true,
         updatedAt: true,
-       
+
       },
     });
 
@@ -290,10 +282,10 @@ export class UserService {
     });
 
     const savedTeacher = await this.userRepository.save(teacher);
-    
+
     // Create the teacher entity
     await this.teacherService.createWithUser(savedTeacher);
-    
+
     return savedTeacher;
   }
 

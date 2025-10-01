@@ -146,13 +146,15 @@ export class TeacherController {
     };
   }
 
-  // Teacher endpoint to create students
+ 
   @Post('create-student')
   @Roles(UserRole.TEACHER)
   async createStudent(
     @Body() createStudentDto: CreateStudentDto,
     @GetSignedUser() user: UserPayload,
   ) {
+  
+    
     // Verify that the user is a teacher
     const currentUser = await this.userService.findOneById(user.id);
     if (!currentUser || currentUser.role !== UserRole.TEACHER) {

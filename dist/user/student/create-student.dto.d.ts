@@ -1,11 +1,25 @@
 export declare class CreateStudentDto {
     firstName: string;
     lastName: string;
-    email?: string;
     phoneNumber?: string;
+    whatsapp?: string;
     parentPhoneNumber?: string;
+    section?: string;
     grade?: string;
-    id?: string;
+    nationalId?: string;
+    location?: string;
+    branchId?: string;
+    notes?: {
+        text: string;
+        createdAt?: Date;
+    }[];
     profilePhoto?: string;
     manualEntryId?: string;
+    id?: string;
+    totalAmount?: number;
+    downPayment?: number;
+    remainingDownPayment?: number;
+    throughPerson?: string;
+    cashReceiver?: string;
+    receiptNumber?: string;
 }

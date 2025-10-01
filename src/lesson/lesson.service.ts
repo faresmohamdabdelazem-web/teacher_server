@@ -1324,13 +1324,7 @@ export class LessonService {
       endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
     }
 
-    console.log('Teacher today lessons - Date range:', {
-      startOfDay: startOfDay.toISOString(),
-      endOfDay: endOfDay.toISOString(),
-      teacherId,
-      dateProvided: !!date,
-      providedDate: date
-    });
+if(!teacherId) throw new NotFoundException("Teacher Id Not Sent")
 
     // Build where clause dynamically
     const whereClause: any = {
@@ -1344,7 +1338,7 @@ export class LessonService {
       whereClause.status = status;
     }
 
-    console.log('Teacher today lessons - Where clause:', whereClause);
+  
 
     const lessons = await this.lessonRepository.find({
       where: whereClause,
@@ -1397,6 +1391,9 @@ export class LessonService {
   }
 
   async calculateTeacherStats(teacherId: string, period: StatsPeriod, startDate?: string, endDate?: string): Promise<TeacherStatsResponse> {
+
+ if(!teacherId) throw new  NotFoundException("No TeacherId Found")
+
     const teacher = await this.teacherRepository.findOne({ where: { id: teacherId } });
     if (!teacher) {
       throw new NotFoundException('Teacher not found');

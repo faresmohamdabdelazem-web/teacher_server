@@ -28,6 +28,7 @@ const student_controller_1 = require("./student/student.controller");
 const auth_module_1 = require("../auth/auth.module");
 const notification_module_1 = require("../notification/notification.module");
 const whatsapp_service_1 = require("../notification/whatsapp.service");
+const installment_module_1 = require("../Installment/installment.module");
 let UserModule = class UserModule {
 };
 exports.UserModule = UserModule;
@@ -43,6 +44,7 @@ exports.UserModule = UserModule = __decorate([
                 lesson_attendance_entity_1.LessonAttendance,
             ]),
             cloudinary_module_1.CloudinaryModule,
+            installment_module_1.InstallmentModule,
             notification_module_1.NotificationModule,
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
         ],

@@ -8,12 +8,9 @@ function HashPassword() {
         if (!value)
             return value;
         if (typeof value === 'string' && value.startsWith('$2b$')) {
-            console.log('Password already hashed, skipping hash');
             return value;
         }
-        console.log('Hashing password:', value);
         const hashedPassword = (0, helper_1.hashPasswordSync)(value);
-        console.log('Hashed password:', hashedPassword);
         return hashedPassword;
     });
 }

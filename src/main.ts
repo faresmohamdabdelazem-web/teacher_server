@@ -5,7 +5,7 @@ import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
 import { HttpExceptionFilter } from 'src/filters/http-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
-
+import morgan from "morgan"
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
@@ -14,7 +14,7 @@ async function bootstrap() {
 
   app.useBodyParser('json', { limit: '15mb' });
   app.use(cookieParser());
-
+app.use(morgan("dev"))
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

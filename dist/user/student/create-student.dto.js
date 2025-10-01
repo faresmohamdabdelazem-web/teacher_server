@@ -11,8 +11,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateStudentDto = void 0;
 const class_validator_1 = require("class-validator");
-const is_ulid_decorator_1 = require("../../decorators/is.ulid.decorator");
+const class_transformer_1 = require("class-transformer");
 const isBase64OrURL_decorator_1 = require("../../decorators/isBase64OrURL.decorator");
+const is_ulid_decorator_1 = require("../../decorators/is.ulid.decorator");
 class CreateStudentDto {
 }
 exports.CreateStudentDto = CreateStudentDto;
@@ -28,14 +29,14 @@ __decorate([
 ], CreateStudentDto.prototype, "lastName", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEmail)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], CreateStudentDto.prototype, "email", void 0);
+], CreateStudentDto.prototype, "phoneNumber", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], CreateStudentDto.prototype, "phoneNumber", void 0);
+], CreateStudentDto.prototype, "whatsapp", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
@@ -45,12 +46,32 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
+], CreateStudentDto.prototype, "section", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
 ], CreateStudentDto.prototype, "grade", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, is_ulid_decorator_1.IsULID)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Length)(14, 14, { message: 'National ID must be exactly 14 digits' }),
     __metadata("design:type", String)
-], CreateStudentDto.prototype, "id", void 0);
+], CreateStudentDto.prototype, "nationalId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "location", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "branchId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], CreateStudentDto.prototype, "notes", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, isBase64OrURL_decorator_1.IsBase64OrURL)(),
@@ -61,4 +82,42 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "manualEntryId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, is_ulid_decorator_1.IsULID)(),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateStudentDto.prototype, "totalAmount", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateStudentDto.prototype, "downPayment", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateStudentDto.prototype, "remainingDownPayment", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "throughPerson", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "cashReceiver", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "receiptNumber", void 0);
 //# sourceMappingURL=create-student.dto.js.map

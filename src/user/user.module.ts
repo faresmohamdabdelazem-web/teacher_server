@@ -19,6 +19,7 @@ import { StudentController } from './student/student.controller';
 import { AuthModule } from 'src/auth/auth.module';
 import { NotificationModule } from 'src/notification/notification.module';
 import { WhatsAppService } from 'src/notification/whatsapp.service';
+import { InstallmentModule } from 'src/Installment/installment.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { WhatsAppService } from 'src/notification/whatsapp.service';
       LessonAttendance,
     ]),
     CloudinaryModule,
+    InstallmentModule,
     NotificationModule,
     forwardRef(() => AuthModule),
   ],
@@ -38,6 +40,7 @@ import { WhatsAppService } from 'src/notification/whatsapp.service';
     UserController,
     TeacherController,
     StudentController,
+
   ],
   providers: [
     UserService, 

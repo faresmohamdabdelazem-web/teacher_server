@@ -16,4 +16,6 @@ export class CreateTeacherDto {
   @IsNotEmpty()
   @IsString()
   password: string;
-} 
+
+
+}

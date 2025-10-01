@@ -26,6 +26,7 @@ const notification_module_1 = require("./notification/notification.module");
 const typeorm_1 = require("@nestjs/typeorm");
 const lesson_module_1 = require("./lesson/lesson.module");
 const admin_controller_1 = require("./admin/admin.controller");
+const installment_module_1 = require("./Installment/installment.module");
 let AppModule = class AppModule {
     constructor(userService) {
         this.userService = userService;
@@ -38,7 +39,10 @@ let AppModule = class AppModule {
         common_1.Logger.log('ADMIN CREATED');
     }
     configure(consumer) {
-        consumer.apply(logger_middleware_1.LoggerMiddleware).forRoutes('*');
+        consumer
+            .apply(logger_middleware_1.LoggerMiddleware)
+            .exclude()
+            .forRoutes('*');
     }
 };
 exports.AppModule = AppModule;
@@ -49,19 +53,20 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true,
                 ignoreEnvFile: false,
             }),
-            typeorm_1.TypeOrmModule.forRoot({
-                type: 'postgres',
-                host: process.env.DB_HOST,
-                port: +process.env.DB_PORT,
-                username: process.env.DB_USERNAME,
-                password: process.env.DB_PASSWORD,
-                database: process.env.DB_DATABASE,
-                autoLoadEntities: true,
-                synchronize: process.env.NODE_ENV == 'prod' ? false : true,
-                ssl: true,
+            typeorm_1.TypeOrmModule.forRootAsync({
+                imports: [config_1.ConfigModule],
+                inject: [config_1.ConfigService],
+                useFactory: async (config) => ({
+                    type: 'postgres',
+                    url: config.get('DATABASE_URL'),
+                    autoLoadEntities: true,
+                    synchronize: true,
+                    ssl: false,
+                }),
             }),
             auth_module_1.AuthModule,
             user_module_1.UserModule,
+            installment_module_1.InstallmentModule,
             cloudinary_module_1.CloudinaryModule,
             mail_module_1.MailModule,
             mailer_1.MailerModule.forRoot({

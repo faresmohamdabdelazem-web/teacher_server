@@ -33,18 +33,13 @@ let UserService = class UserService {
         this.assistantService = assistantService;
     }
     async create(createUserDto) {
-        console.log('Creating user with password:', createUserDto.password);
         const transformedDto = (0, class_transformer_1.plainToClass)(create_user_dto_1.CreateUserDto, createUserDto);
-        console.log('Transformed DTO password:', transformedDto.password);
         const user = this.userRepository.create(transformedDto);
-        console.log('User created with password:', user.password);
         const savedUser = await this.userRepository.save(user).catch((error) => {
-            console.log(error);
             if (error.detail.includes(user.email) && error.code == '23505')
                 throw new common_1.ConflictException(`Email '${user.email}' is already exists`);
             throw new common_1.InternalServerErrorException();
         });
-        console.log('User saved with password:', savedUser.password);
         if (savedUser.role === user_role_enum_1.UserRole.TEACHER) {
             await this.teacherService.createWithUser(savedUser);
         }

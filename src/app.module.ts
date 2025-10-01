@@ -1,8 +1,8 @@
-import { Logger, MiddlewareConsumer, Module } from '@nestjs/common';
+import { Logger, MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { MailModule } from './mail/mail.module';
 import { MailerModule } from '@nestjs-modules/mailer';
@@ -14,6 +14,7 @@ import { NotificationModule } from './notification/notification.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LessonModule } from './lesson/lesson.module';
 import { AdminController } from './admin/admin.controller';
+import { InstallmentModule } from './Installment/installment.module';
 
 @Module({
   imports: [
@@ -21,20 +22,21 @@ import { AdminController } from './admin/admin.controller';
       isGlobal: true,
       ignoreEnvFile: false,
     }),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST,
-      port: +process.env.DB_PORT,
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
-      autoLoadEntities: true,
-      // logging: true,
-      synchronize: process.env.NODE_ENV == 'prod' ? false : true,
-      ssl: true,
-    }),
+    TypeOrmModule.forRootAsync({
+  imports: [ConfigModule],
+  inject: [ConfigService],
+  useFactory: async (config: ConfigService) => ({
+    type: 'postgres',
+    url: config.get<string>('DATABASE_URL'),
+    autoLoadEntities: true,
+    synchronize: true,
+    ssl:false,
+    
+  }),
+}),
     AuthModule,
     UserModule,
+    InstallmentModule,
     CloudinaryModule,
     MailModule,
     MailerModule.forRoot({
@@ -72,6 +74,11 @@ export class AppModule {
   }
 
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggerMiddleware).forRoutes('*');
+    consumer
+      .apply(LoggerMiddleware)
+      .exclude(
+        // { path: 'api/v2/user', method: RequestMethod.POST },
+      )
+      .forRoutes('*');
   }
 }

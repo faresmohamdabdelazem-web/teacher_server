@@ -61,18 +61,16 @@ export class AuthService {
       throw new UnauthorizedException('Email or password is not correct');
     }
 
-    console.log('Comparing passwords...');
-    console.log('Input password:', password);
-    console.log('Stored hash:', user.password);
+
     
     const isPasswordValid = await comparePassword(password, user.password);
     console.log('Password comparison result:', isPasswordValid);
 
     if (!isPasswordValid) {
-      console.log('password not correct');
+      
       throw new UnauthorizedException('Email or password is not correct');
     }
-
+console.log(user)
     return this.generateAndStoreTokens(user);
   }
 

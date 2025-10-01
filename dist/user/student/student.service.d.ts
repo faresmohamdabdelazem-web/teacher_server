@@ -2,17 +2,17 @@ import { Repository } from 'typeorm';
 import { Student } from './student.entity';
 import { CreateStudentDto } from './create-student.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { InstallmentService } from 'src/Installment/installment.service';
 export declare class StudentService {
     private studentRepository;
     private cloudinary;
-    constructor(studentRepository: Repository<Student>, cloudinary: CloudinaryService);
+    private installmentPay;
+    constructor(studentRepository: Repository<Student>, cloudinary: CloudinaryService, installmentPay: InstallmentService);
     create(createStudentDto: CreateStudentDto): Promise<Student>;
     findAll(): Promise<{
         students: Student[];
     }>;
-    findOne(id: string): Promise<{
-        student: Student;
-    }>;
+    findOne(id: string): Promise<Student>;
     findByPhoneNumber(phoneNumber: string): Promise<{
         student: Student;
     }>;

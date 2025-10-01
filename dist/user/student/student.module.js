@@ -14,12 +14,18 @@ const student_controller_1 = require("./student.controller");
 const student_entity_1 = require("./student.entity");
 const cloudinary_module_1 = require("../../cloudinary/cloudinary.module");
 const notification_module_1 = require("../../notification/notification.module");
+const installment_module_1 = require("../../Installment/installment.module");
 let StudentModule = class StudentModule {
 };
 exports.StudentModule = StudentModule;
 exports.StudentModule = StudentModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([student_entity_1.Student]), cloudinary_module_1.CloudinaryModule, notification_module_1.NotificationModule],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([student_entity_1.Student]),
+            cloudinary_module_1.CloudinaryModule,
+            notification_module_1.NotificationModule,
+            installment_module_1.InstallmentModule,
+        ],
         controllers: [student_controller_1.StudentController],
         providers: [student_service_1.StudentService],
         exports: [student_service_1.StudentService],
