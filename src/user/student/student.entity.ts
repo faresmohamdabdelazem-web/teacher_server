@@ -47,7 +47,7 @@ export class Student {
   location?: string;
 
   @Column({ type: 'jsonb', nullable: true, default: [] })
-  notes: { text: string; createdAt: Date }[];
+  notes: { text: string; descroption:string ;createdAt: Date }[];
 
   @Column({ nullable: true })
   profilePhoto?: string;
