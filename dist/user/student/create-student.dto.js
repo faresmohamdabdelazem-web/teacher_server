@@ -13,7 +13,6 @@ exports.CreateStudentDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const isBase64OrURL_decorator_1 = require("../../decorators/isBase64OrURL.decorator");
-const is_ulid_decorator_1 = require("../../decorators/is.ulid.decorator");
 class CreateStudentDto {
 }
 exports.CreateStudentDto = CreateStudentDto;
@@ -43,7 +42,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "parentPhoneNumber", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "section", void 0);
@@ -53,7 +52,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "grade", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.Length)(14, 14, { message: 'National ID must be exactly 14 digits' }),
     __metadata("design:type", String)
@@ -64,8 +63,8 @@ __decorate([
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "location", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsUUID)('4', { message: 'Branch ID must be a valid UUID.' }),
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "branchId", void 0);
 __decorate([
@@ -82,11 +81,6 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "manualEntryId", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, is_ulid_decorator_1.IsULID)(),
-    __metadata("design:type", String)
-], CreateStudentDto.prototype, "id", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),

@@ -1,6 +1,7 @@
 import { Teacher } from '../teacher/teacher.entity';
 import { Lesson } from '../../lesson/entities/lesson.entity';
 import { Installment } from 'src/Installment/entities/installment.entity';
+import { Branch } from 'src/branch/entities/branch.entity';
 export declare class Student {
     id: string;
     firstName: string;
@@ -12,7 +13,6 @@ export declare class Student {
     grade?: string;
     nationalId?: string;
     location?: string;
-    branchId?: string;
     notes: {
         text: string;
         createdAt: Date;
@@ -23,7 +23,10 @@ export declare class Student {
     totalAmount?: number;
     downPayment?: number;
     remainingDownPayment?: number;
+    paidAmount: number;
+    remainingBalance: number;
     throughPerson?: string;
+    branch: Branch;
     cashReceiver?: string;
     receiptNumber?: string;
     createdAt: Date;
@@ -31,5 +34,4 @@ export declare class Student {
     teachers: Teacher[];
     lessons: Lesson[];
     installments: Installment[];
-    generateId(): void;
 }

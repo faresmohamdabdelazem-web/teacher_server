@@ -9,12 +9,12 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { join } from 'path';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { AssetsModule } from './assets/assets.module';
-import { UserService } from './user/user.service';
 import { NotificationModule } from './notification/notification.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LessonModule } from './lesson/lesson.module';
 import { AdminController } from './admin/admin.controller';
 import { InstallmentModule } from './Installment/installment.module';
+import { BranchModule } from './branch/branch.module';
 
 @Module({
   imports: [
@@ -23,20 +23,20 @@ import { InstallmentModule } from './Installment/installment.module';
       ignoreEnvFile: false,
     }),
     TypeOrmModule.forRootAsync({
-  imports: [ConfigModule],
-  inject: [ConfigService],
-  useFactory: async (config: ConfigService) => ({
-    type: 'postgres',
-    url: config.get<string>('DATABASE_URL'),
-    autoLoadEntities: true,
-    synchronize: true,
-    ssl:false,
-    
-  }),
-}),
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => ({
+        type: 'postgres',
+        url: config.get<string>('DATABASE_URL'),
+        autoLoadEntities: true,
+        synchronize: true,
+        ssl: false,
+      }),
+    }),
     AuthModule,
     UserModule,
     InstallmentModule,
+    BranchModule,
     CloudinaryModule,
     MailModule,
     MailerModule.forRoot({
@@ -58,27 +58,16 @@ import { InstallmentModule } from './Installment/installment.module';
     AssetsModule,
     NotificationModule,
     LessonModule,
-  ],  
+  ],
   controllers: [AdminController],
 })
 export class AppModule {
-  constructor(private readonly userService: UserService) {}
-
-  async onModuleInit() {
-    await this.userService.createAdmin();
-
-    if (process.env.NODE_ENV == 'dev') {
-      await this.userService.createFakeUsers();
-    }
-    Logger.log('ADMIN CREATED');
-  }
-
+  // تم حذف الـ constructor و onModuleInit من هنا
+  
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(LoggerMiddleware)
-      .exclude(
-        // { path: 'api/v2/user', method: RequestMethod.POST },
-      )
+      .exclude()
       .forRoutes('*');
   }
 }

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from './student.entity';
@@ -6,217 +11,225 @@ import { CreateStudentDto } from './create-student.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PROFILE_PHOTO_FILE } from 'src/hatly.constants';
 import { InstallmentService } from 'src/Installment/installment.service';
+import { PayInstallmentDto } from 'src/Installment/dto/pay-installment.dto';
+import { Installment } from 'src/Installment/entities/installment.entity';
+import { Teacher } from '../teacher/teacher.entity';
+import { Lesson } from 'src/lesson/entities/lesson.entity';
+import { Branch } from 'src/branch/entities/branch.entity';
 
 @Injectable()
 export class StudentService {
   constructor(
     @InjectRepository(Student)
     private studentRepository: Repository<Student>,
+    @InjectRepository(Installment)
+    private installmentRepository: Repository<Installment>,
+    @InjectRepository(Branch)
+    private branchRepository: Repository<Branch>,
     private cloudinary: CloudinaryService,
-    private installmentPay:InstallmentService
-  ) { }
+    private installmentService: InstallmentService,
+  ) {}
 
-async create(createStudentDto: CreateStudentDto): Promise<Student> {
-  const totalAmount = createStudentDto.totalAmount || 0;
-  const downPayment = createStudentDto.downPayment || 0;
-  const remainingDownPayment = createStudentDto.remainingDownPayment ?? downPayment;
+  async create(createStudentDto: CreateStudentDto): Promise<Student> {
+    const { branchId, nationalId, section, phoneNumber } = createStudentDto;
 
-  // التحقق من صحة المبالغ
-  if (totalAmount <= downPayment) {
-    throw new BadRequestException(
-      `قيمة المبلغ الكلي (${totalAmount}) يجب أن تكون أكبر من المقدم (${downPayment})`
-    );
-  }
+    if (phoneNumber) {
+      const existingStudentByPhone = await this.studentRepository.findOneBy({
+        phoneNumber: phoneNumber,
+      });
+      if (existingStudentByPhone) {
+        throw new ConflictException(
+          'Student with this phone number already exists',
+        );
+      }
+    }
 
-  if (remainingDownPayment >= downPayment) {
-    throw new BadRequestException(
-      `باقي المقدم (${remainingDownPayment}) يجب أن يكون اصغر من او يساوي المقدم (${downPayment})`
-    );
-  }
+    const branch = await this.branchRepository.findOneBy({ id: branchId });
+    if (!branch) {
+      throw new BadRequestException(`Branch with ID "${branchId}" not found`);
+    }
 
-  // إنشاء الطالب
-  const student = this.studentRepository.create({
-    ...createStudentDto,
-    remainingDownPayment,
-    installmentStage: 0,
-  });
+    const branchInitial = branch.name.charAt(0).toUpperCase();
+    const sectionInitial = section.charAt(0).toUpperCase();
+    const nationalIdSuffix = nationalId.slice(-6);
+    const generatedId = `${branchInitial}${sectionInitial}-${nationalIdSuffix}`;
 
-  const savedStudent = await this.studentRepository.save(student);
+    const existingStudentById = await this.studentRepository.findOneBy({
+      id: generatedId,
+    });
+    if (existingStudentById) {
+      throw new ConflictException(
+        `A student with the generated ID "${generatedId}" already exists. This may indicate a duplicate national ID.`,
+      );
+    }
 
-  const remainingAmount = totalAmount - downPayment;
-  const monthlyInstallment = remainingAmount / 12;
+    const totalAmount = createStudentDto.totalAmount || 0;
+    const downPayment = createStudentDto.downPayment || 0;
+    const remainingDownPayment = createStudentDto.remainingDownPayment || 0;
 
-  const installments = [];
+    if (totalAmount <= downPayment) {
+      throw new BadRequestException(
+        'Total amount must be greater than down payment',
+      );
+    }
 
-  // لو فيه باقي مقدم، نضيفه كقسط أول
-  if (remainingDownPayment > 0) {
-    const installment = await this.installmentPay.create({
-      studentId: savedStudent.id,
-      installmentNumber: 0,
-      amount: remainingDownPayment,
-      monthNumber: 0,
-      cashReceiver: createStudentDto.cashReceiver || 'Admin',
+    const actualPaidOnCreate = downPayment - remainingDownPayment;
+
+    const studentData = {
+      ...createStudentDto,
+      id: generatedId,
+      branch: branch,
+      paidAmount: actualPaidOnCreate,
+      remainingBalance: totalAmount - actualPaidOnCreate,
       installmentStage: 0,
-    });
-    installments.push(installment);
-    student.remainingDownPayment = 0;
+    };
+    delete studentData.branchId;
+
+    const student = this.studentRepository.create(studentData);
+    const savedStudent = await this.studentRepository.save(student);
+
+    if (
+      savedStudent.remainingDownPayment &&
+      savedStudent.remainingDownPayment > 0
+    ) {
+      await this.installmentService.createInitialInstallment(savedStudent);
+    } else {
+      await this.installmentService.createMonthlyInstallments(savedStudent);
+      savedStudent.installmentStage = 1;
+      await this.studentRepository.save(savedStudent);
+    }
+
+    return this.findOne(savedStudent.id);
   }
 
-  // الأقساط الشهرية بعد المقدم
-  for (let i = 1; i <= 12; i++) {
-    const installment = await this.installmentPay.create({
-      studentId: savedStudent.id,
-      installmentNumber: i,
-      amount: monthlyInstallment,
-      monthNumber: i,
-      cashReceiver: createStudentDto.cashReceiver || 'Admin',
-      installmentStage: 1,
+  async payInstallment(
+    studentId: string,
+    dto: PayInstallmentDto,
+  ): Promise<Student> {
+    const student = await this.studentRepository.findOneBy({ id: studentId });
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
+
+    const currentInstallment = await this.installmentRepository.findOne({
+      where: {
+        studentId: student.id,
+        installmentNumber: student.installmentStage,
+      },
     });
-    installments.push(installment);
+
+    if (!currentInstallment) {
+      throw new NotFoundException(
+        'No active installment found for the current stage',
+      );
+    }
+
+    if (dto.amount > currentInstallment.remainingAmount) {
+      throw new BadRequestException(
+        'القيمة المالية اكبر من القيمة المستحقة ',
+      );
+    }
+
+    currentInstallment.amountPaid += dto.amount;
+    currentInstallment.remainingAmount -= dto.amount;
+    currentInstallment.paymentHistory.push({
+      amount: dto.amount,
+      paidAt: new Date(),
+      cashReceiver: dto.cashReceiver,
+    });
+
+    student.paidAmount += dto.amount;
+    student.remainingBalance -= dto.amount;
+
+    await this.installmentRepository.save(currentInstallment);
+
+    if (currentInstallment.remainingAmount <= 0) {
+      const wasInitialPaymentStage = student.installmentStage === 0;
+      student.installmentStage += 1;
+
+      if (wasInitialPaymentStage) {
+        await this.installmentService.createMonthlyInstallments(student);
+      }
+    }
+
+    await this.studentRepository.save(student);
+    return this.findOne(student.id);
   }
-
-  student.installmentStage = 1;
-  await this.studentRepository.save(student);
-
-  return savedStudent;
-}
-
-
 
   async findAll(): Promise<{ students: Student[] }> {
     const students = await this.studentRepository.find({
-      relations: ['teachers', 'lessons','installments'],
+      relations: ['teachers', 'lessons', 'installments', 'branch'],
     });
     return { students };
   }
 
- async findOne(id: string): Promise<Student> {
-  const student = await this.studentRepository.findOne({
-    where: { id },
-    relations: ['teachers', 'lessons'],
-  });
-
-  if (!student) {
-    throw new NotFoundException('Student not found');
-  }
-
-  return student; // ✅ رجّع Student نفسه مش object جواه
-}
-
-
-  async findByPhoneNumber(phoneNumber: string): Promise<{ student: Student }> {
+  async findOne(id: string): Promise<Student> {
     const student = await this.studentRepository.findOne({
-      where: { phoneNumber: phoneNumber },
-      relations: ['teachers', 'lessons'],
+      where: { id },
+      relations: ['teachers', 'lessons', 'installments', 'branch'],
     });
-
     if (!student) {
       throw new NotFoundException('Student not found');
     }
-
-    return { student };
+    return student;
   }
 
-  async findById(id: string): Promise<{ student: Student }> {
+  async findByPhoneNumber(phoneNumber: string): Promise<Student> {
     const student = await this.studentRepository.findOne({
-      where: { id: id },
-      relations: ['teachers', 'lessons'],
+      where: { phoneNumber },
+      relations: ['teachers', 'lessons', 'branch'],
     });
-
     if (!student) {
-      throw new NotFoundException('Student not found');
+      throw new NotFoundException('Student not found with this phone number');
     }
-
-    return { student };
+    return student;
   }
 
-async update(id: string, updateStudentDto: Partial<CreateStudentDto>): Promise<Student> {
-  const student = await this.findOne(id);
-
-  // ✅ تحقق من phoneNumber
-  if (updateStudentDto.phoneNumber && updateStudentDto.phoneNumber !== student.phoneNumber) {
-    const existingStudent = await this.studentRepository.findOne({
-      where: { phoneNumber: updateStudentDto.phoneNumber },
+  async findByManualEntryId(manualEntryId: string): Promise<Student> {
+    const student = await this.studentRepository.findOne({
+      where: { manualEntryId },
+      relations: ['teachers', 'lessons', 'branch'],
     });
-
-    if (existingStudent) {
-      throw new ConflictException('Student with this phone number already exists');
+    if (!student) {
+      throw new NotFoundException('Student not found with this manual ID');
     }
+    return student;
   }
 
-  // ✅ تحقق من manualEntryId
-  if (updateStudentDto.manualEntryId && updateStudentDto.manualEntryId !== student.manualEntryId) {
-    const existingManualId = await this.studentRepository.findOne({
-      where: { manualEntryId: updateStudentDto.manualEntryId },
-    });
-
-    if (existingManualId) {
-      throw new ConflictException('Student with this manualEntryId already exists');
-    }
+  async update(
+    id: string,
+    updateStudentDto: Partial<CreateStudentDto>,
+  ): Promise<Student> {
+    const student = await this.findOne(id);
+    Object.assign(student, updateStudentDto);
+    await this.studentRepository.save(student);
+    return this.findOne(id);
   }
 
-  // ✅ رفع الصورة لو اتغيرت
-  if (updateStudentDto.profilePhoto && !updateStudentDto.profilePhoto.startsWith('http')) {
-    updateStudentDto.profilePhoto = await this.cloudinary.uploadBase64(
-      updateStudentDto.profilePhoto,
-      PROFILE_PHOTO_FILE,
-      `student_${updateStudentDto.phoneNumber || Date.now()}`
-    );
+  async remove(id: string): Promise<void> {
+    const student = await this.findOne(id);
+    await this.studentRepository.remove(student);
   }
 
-  // ✅ تحديث الـ notes
-  if (updateStudentDto.notes) {
-    updateStudentDto.notes = updateStudentDto.notes.map(note => ({
-      ...note,
-      createdAt: note.createdAt || new Date(), 
-    }));
-  }
-
-  Object.assign(student, updateStudentDto);
-  return await this.studentRepository.save(student);
-}
-
-
-async remove(id: string): Promise<void> {
-  const student = await this.findOne(id); // ده Student مش object فيه student
-  await this.studentRepository.remove(student);
-}
-
-
-  async getStudentTeachers(id: string): Promise<{ teachers: any[] }> {
+  async getStudentTeachers(id: string): Promise<Teacher[]> {
     const student = await this.studentRepository.findOne({
       where: { id },
       relations: ['teachers'],
     });
-
     if (!student) {
       throw new NotFoundException('Student not found');
     }
-
-    return { teachers: student.teachers };
+    return student.teachers;
   }
 
-  async getStudentLessons(id: string): Promise<{ lessons: any[] }> {
+  async getStudentLessons(id: string): Promise<Lesson[]> {
     const student = await this.studentRepository.findOne({
       where: { id },
       relations: ['lessons'],
     });
-
     if (!student) {
       throw new NotFoundException('Student not found');
     }
-
-    return { lessons: student.lessons };
+    return student.lessons;
   }
-
-  async findByManualEntryId(manualEntryId: string): Promise<{ student: Student }> {
-    const student = await this.studentRepository.findOne({
-      where: { manualEntryId: manualEntryId },
-      relations: ['teachers', 'lessons'],
-    });
-    if (!student) {
-      throw new NotFoundException('Student not found');
-    }
-    return { student };
-  }
-} 
+}

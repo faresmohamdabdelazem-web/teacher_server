@@ -52,12 +52,12 @@ export class AuthService {
 
   async signIn(signInDto: SignInDto) {
     const { email, password } = signInDto;
-    console.log('Login attempt for email:', email);
+
       const user = await this.userService.findOneByEmail(email);
-    console.log('Found user:', user ? 'yes' : 'no');
+    
     
     if (!user) {
-      console.log('user not found');
+      
       throw new UnauthorizedException('Email or password is not correct');
     }
 
@@ -70,7 +70,7 @@ export class AuthService {
       
       throw new UnauthorizedException('Email or password is not correct');
     }
-console.log(user)
+
     return this.generateAndStoreTokens(user);
   }
 
@@ -263,6 +263,9 @@ console.log(user)
       lastName: createStudentDto.lastName,
       phoneNumber: createStudentDto.phoneNumber,
       parentPhoneNumber: createStudentDto.parentPhoneNumber,
+      section: createStudentDto.section,
+      nationalId: createStudentDto.nationalId,
+      branchId: createStudentDto.branchId
     });
 
     return {

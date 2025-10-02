@@ -2,57 +2,70 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Installment } from './entities/installment.entity';
-import { CreateInstallmentDto } from './dto/create-installment.dto';
 import { Student } from 'src/user/student/student.entity';
-import { StudentService } from 'src/user/student/student.service';
 
 @Injectable()
 export class InstallmentService {
-    constructor(
-        @InjectRepository(Installment)
-        private installmentRepository: Repository<Installment>,
-        @InjectRepository(Student)
-        private studentRepository: Repository<Student>,
-        
-        
-    ) { }
+  constructor(
+    @InjectRepository(Installment)
+    private installmentRepository: Repository<Installment>,
+    @InjectRepository(Student)
+    private studentRepository: Repository<Student>,
+  ) {}
 
-    async create(dto: CreateInstallmentDto): Promise<Installment> {
-        const student = await this.studentRepository.findOne({
-            where: { id: dto.studentId },
-        });
+  async createInitialInstallment(student: Student): Promise<Installment> {
+    const installment = this.installmentRepository.create({
+      studentId: student.id,
+      installmentNumber: 0,
+      installmentStage: 0,
+      amount: student.remainingDownPayment,
+      monthNumber: 0,
+      cashReceiver: student.cashReceiver || 'Admin',
+    });
+    return this.installmentRepository.save(installment);
+  }
 
-        if (!student) {
-            throw new NotFoundException('Student not found');
-        }
+  async createMonthlyInstallments(student: Student): Promise<Installment[]> {
+    // --- تعديل مهم: تصحيح معادلة حساب المبلغ المتبقي للأقساط ---
+    const amountToBeInstalled = student.totalAmount - student.downPayment;
+    const monthlyAmount = amountToBeInstalled / 12;
+    // -------------------------------------------------------------
 
-        // مصفوفة الشهور
-        const months = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December',
-        ];
-
-        // توليد اسم الشهر من الرقم
-        const monthName = months[dto.monthNumber - 1];
-
-        const installment = this.installmentRepository.create({
-            ...dto,
- 
-            student,
-        });
-
-        return this.installmentRepository.save(installment);
+    const installments: Installment[] = [];
+    for (let i = 1; i <= 12; i++) {
+      const installment = this.installmentRepository.create({
+        studentId: student.id,
+        installmentNumber: i,
+        installmentStage: i,
+        amount: monthlyAmount,
+        monthNumber: i, // سيتم استخدامه لحساب تاريخ الاستحقاق
+        cashReceiver: student.cashReceiver || 'Admin',
+      });
+      installments.push(installment);
     }
+    return this.installmentRepository.save(installments);
+  }
 
+  async findAll(): Promise<Installment[]> {
+    return this.installmentRepository.find({ relations: ['student'] });
+  }
 
-    async findAll(): Promise<Installment[]> {
-        return this.installmentRepository.find({ relations: ['student'] });
+  async findByStudent(studentId: string): Promise<Installment[]> {
+    const student = await this.studentRepository.findOneBy({ id: studentId });
+    if (!student) {
+      throw new NotFoundException('Student not found');
     }
+    return this.installmentRepository.find({
+      where: { studentId },
+      relations: ['student'],
+      order: { installmentNumber: 'ASC' },
+    });
+  }
 
-    async findByStudent(studentId: string): Promise<Installment[]> {
-        return this.installmentRepository.find({
-            where: { studentId },
-            relations: ['student'],
-        });
-    }
+  async findOne(id: string): Promise<Installment> {
+    return this.installmentRepository.findOne({
+      where: { id },
+      relations: ['student'],
+    });
+  }
 }

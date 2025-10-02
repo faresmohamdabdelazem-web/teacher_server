@@ -14,15 +14,12 @@ const typeorm_1 = require("typeorm");
 const teacher_entity_1 = require("../teacher/teacher.entity");
 const lesson_entity_1 = require("../../lesson/entities/lesson.entity");
 const installment_entity_1 = require("../../Installment/entities/installment.entity");
-const ulid_1 = require("ulid");
+const branch_entity_1 = require("../../branch/entities/branch.entity");
 let Student = class Student {
-    generateId() {
-        this.id = (0, ulid_1.ulid)();
-    }
 };
 exports.Student = Student;
 __decorate([
-    (0, typeorm_1.PrimaryColumn)(),
+    (0, typeorm_1.PrimaryColumn)({ type: 'varchar', length: 20 }),
     __metadata("design:type", String)
 ], Student.prototype, "id", void 0);
 __decorate([
@@ -34,7 +31,7 @@ __decorate([
     __metadata("design:type", String)
 ], Student.prototype, "lastName", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'varchar', nullable: true, unique: true }),
     __metadata("design:type", String)
 ], Student.prototype, "phoneNumber", void 0);
 __decorate([
@@ -61,10 +58,6 @@ __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], Student.prototype, "location", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Student.prototype, "branchId", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'jsonb', nullable: true, default: [] }),
     __metadata("design:type", Array)
@@ -94,9 +87,22 @@ __decorate([
     __metadata("design:type", Number)
 ], Student.prototype, "remainingDownPayment", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'float', default: 0 }),
+    __metadata("design:type", Number)
+], Student.prototype, "paidAmount", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'float', nullable: true }),
+    __metadata("design:type", Number)
+], Student.prototype, "remainingBalance", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'varchar', nullable: true }),
     __metadata("design:type", String)
 ], Student.prototype, "throughPerson", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => branch_entity_1.Branch, (branch) => branch.students, { onDelete: 'SET NULL' }),
+    (0, typeorm_1.JoinColumn)({ name: 'branchId' }),
+    __metadata("design:type", branch_entity_1.Branch)
+], Student.prototype, "branch", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', nullable: true }),
     __metadata("design:type", String)
@@ -127,12 +133,6 @@ __decorate([
     }),
     __metadata("design:type", Array)
 ], Student.prototype, "installments", void 0);
-__decorate([
-    (0, typeorm_1.BeforeInsert)(),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], Student.prototype, "generateId", null);
 exports.Student = Student = __decorate([
     (0, typeorm_1.Entity)('students')
 ], Student);

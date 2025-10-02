@@ -41,11 +41,8 @@ let AuthService = class AuthService {
     }
     async signIn(signInDto) {
         const { email, password } = signInDto;
-        console.log('Login attempt for email:', email);
         const user = await this.userService.findOneByEmail(email);
-        console.log('Found user:', user ? 'yes' : 'no');
         if (!user) {
-            console.log('user not found');
             throw new common_1.UnauthorizedException('Email or password is not correct');
         }
         const isPasswordValid = await (0, helper_1.comparePassword)(password, user.password);
@@ -53,7 +50,6 @@ let AuthService = class AuthService {
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Email or password is not correct');
         }
-        console.log(user);
         return this.generateAndStoreTokens(user);
     }
     async signUp(createUser) {
@@ -203,6 +199,9 @@ let AuthService = class AuthService {
             lastName: createStudentDto.lastName,
             phoneNumber: createStudentDto.phoneNumber,
             parentPhoneNumber: createStudentDto.parentPhoneNumber,
+            section: createStudentDto.section,
+            nationalId: createStudentDto.nationalId,
+            branchId: createStudentDto.branchId
         });
         return {
             message: 'Student created successfully by assistant',

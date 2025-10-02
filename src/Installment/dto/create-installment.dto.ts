@@ -1,25 +1,28 @@
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsDate,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateInstallmentDto {
   @IsNotEmpty()
   @IsNumber()
   monthNumber: number;
 
-
+  @IsOptional()
   @IsBoolean()
   isPaid?: boolean;
 
   @IsNotEmpty()
   @IsNumber()
-  installmentNumber: number; // ← خليها number زي الـ Entity
-
-  @IsNotEmpty()
-  @IsNumber()
-  amount: number; // مبلغ القسط
+  amount: number;
 
   @IsOptional()
-  @IsNumber()
-  installmentStage?: number; // المرحلة
+  @IsDate()
+  paidAt: Date | null;
 
   @IsNotEmpty()
   @IsString()
@@ -27,5 +30,5 @@ export class CreateInstallmentDto {
 
   @IsNotEmpty()
   @IsString()
-  studentId: string; // ID الطالب
+  studentId: string;
 }

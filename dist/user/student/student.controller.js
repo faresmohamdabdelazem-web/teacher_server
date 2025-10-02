@@ -21,6 +21,7 @@ const auth_guard_1 = require("../../auth/guard/auth.guard");
 const role_guard_1 = require("../../auth/guard/role.guard");
 const role_decorator_1 = require("../../decorators/role.decorator");
 const user_role_enum_1 = require("../user.role.enum");
+const pay_installment_dto_1 = require("../../Installment/dto/pay-installment.dto");
 let StudentController = class StudentController {
     constructor(studentService, whatsAppService) {
         this.studentService = studentService;
@@ -28,6 +29,9 @@ let StudentController = class StudentController {
     }
     create(createStudentDto) {
         return this.studentService.create(createStudentDto);
+    }
+    payInstallment(id, payInstallmentDto) {
+        return this.studentService.payInstallment(id, payInstallmentDto);
     }
     findAll() {
         return this.studentService.findAll();
@@ -57,7 +61,7 @@ let StudentController = class StudentController {
         const { phoneNumber, base64Image } = body;
         const to = phoneNumber.startsWith('+') ? phoneNumber : `+2${phoneNumber}`;
         const result = await this.whatsAppService.sendImageBarcode(to, base64Image);
-        return { success: result, message: "Barcode sent successfully" };
+        return { success: result, message: 'Barcode sent successfully' };
     }
 };
 exports.StudentController = StudentController;
@@ -68,6 +72,14 @@ __decorate([
     __metadata("design:paramtypes", [create_student_dto_1.CreateStudentDto]),
     __metadata("design:returntype", void 0)
 ], StudentController.prototype, "create", null);
+__decorate([
+    (0, common_1.Post)(':id/pay'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, pay_installment_dto_1.PayInstallmentDto]),
+    __metadata("design:returntype", void 0)
+], StudentController.prototype, "payInstallment", null);
 __decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),

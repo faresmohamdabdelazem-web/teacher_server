@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { StudentService } from './student.service';
 import { CreateStudentDto } from './create-student.dto';
@@ -15,18 +16,27 @@ import { AuthGuard } from 'src/auth/guard/auth.guard';
 import { RoleGuard } from 'src/auth/guard/role.guard';
 import { Roles } from 'src/decorators/role.decorator';
 import { UserRole } from '../user.role.enum';
-// import { CreateStudentByAssistantDto } from '../assistant/create-student-by-assistant.dto';
+// --- هذا هو السطر الذي تم تصحيحه ---
+import { PayInstallmentDto } from 'src/Installment/dto/pay-installment.dto';
 
 @Controller('students')
 export class StudentController {
   constructor(
     private readonly studentService: StudentService,
     private readonly whatsAppService: WhatsAppService,
-  ) { }
+  ) {}
 
   @Post()
   create(@Body() createStudentDto: CreateStudentDto) {
     return this.studentService.create(createStudentDto);
+  }
+
+  @Post(':id/pay')
+  payInstallment(
+    @Param('id') id: string,
+    @Body() payInstallmentDto: PayInstallmentDto,
+  ) {
+    return this.studentService.payInstallment(id, payInstallmentDto);
   }
 
   @Get()
@@ -50,7 +60,10 @@ export class StudentController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateStudentDto: Partial<CreateStudentDto>) {
+  update(
+    @Param('id') id: string,
+    @Body() updateStudentDto: Partial<CreateStudentDto>,
+  ) {
     return this.studentService.update(id, updateStudentDto);
   }
 
@@ -72,10 +85,15 @@ export class StudentController {
   @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.TEACHER, UserRole.ASSISTANT)
   @Post('send-barcode')
-  async sendBarcodeToPhone(@Body() body: { phoneNumber: string, base64Image: string }) {
+  async sendBarcodeToPhone(
+    @Body() body: { phoneNumber: string; base64Image: string },
+  ) {
     const { phoneNumber, base64Image } = body;
     const to = phoneNumber.startsWith('+') ? phoneNumber : `+2${phoneNumber}`;
-    const result = await this.whatsAppService.sendImageBarcode(to, base64Image);
-    return { success: result, message: "Barcode sent successfully" };
+    const result = await this.whatsAppService.sendImageBarcode(
+      to,
+      base64Image,
+    );
+    return { success: result, message: 'Barcode sent successfully' };
   }
-} 
+}

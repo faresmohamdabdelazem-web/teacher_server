@@ -29,6 +29,8 @@ const auth_module_1 = require("../auth/auth.module");
 const notification_module_1 = require("../notification/notification.module");
 const whatsapp_service_1 = require("../notification/whatsapp.service");
 const installment_module_1 = require("../Installment/installment.module");
+const installment_entity_1 = require("../Installment/entities/installment.entity");
+const branch_entity_1 = require("../branch/entities/branch.entity");
 let UserModule = class UserModule {
 };
 exports.UserModule = UserModule;
@@ -40,8 +42,10 @@ exports.UserModule = UserModule = __decorate([
                 teacher_entity_1.Teacher,
                 student_entity_1.Student,
                 assistant_entity_1.Assistant,
+                branch_entity_1.Branch,
                 lesson_entity_1.Lesson,
                 lesson_attendance_entity_1.LessonAttendance,
+                installment_entity_1.Installment,
             ]),
             cloudinary_module_1.CloudinaryModule,
             installment_module_1.InstallmentModule,

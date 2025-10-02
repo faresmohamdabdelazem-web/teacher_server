@@ -20,6 +20,8 @@ import { AuthModule } from 'src/auth/auth.module';
 import { NotificationModule } from 'src/notification/notification.module';
 import { WhatsAppService } from 'src/notification/whatsapp.service';
 import { InstallmentModule } from 'src/Installment/installment.module';
+import { Installment } from 'src/Installment/entities/installment.entity'; // <-- الخطوة 1: استيراد الكيان
+import { Branch } from 'src/branch/entities/branch.entity';
 
 @Module({
   imports: [
@@ -28,8 +30,10 @@ import { InstallmentModule } from 'src/Installment/installment.module';
       Teacher,
       Student,
       Assistant,
+      Branch,
       Lesson,
       LessonAttendance,
+      Installment, // <-- الخطوة 2: أضف Installment هنا
     ]),
     CloudinaryModule,
     InstallmentModule,
@@ -40,11 +44,10 @@ import { InstallmentModule } from 'src/Installment/installment.module';
     UserController,
     TeacherController,
     StudentController,
-
   ],
   providers: [
-    UserService, 
-    CloudinaryService, 
+    UserService,
+    CloudinaryService,
     UserRepository,
     TeacherService,
     StudentService,
@@ -52,7 +55,7 @@ import { InstallmentModule } from 'src/Installment/installment.module';
     WhatsAppService,
   ],
   exports: [
-    UserService, 
+    UserService,
     UserRepository,
     TeacherService,
     StudentService,

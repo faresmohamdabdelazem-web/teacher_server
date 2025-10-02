@@ -18,70 +18,117 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const student_entity_1 = require("./student.entity");
 const cloudinary_service_1 = require("../../cloudinary/cloudinary.service");
-const hatly_constants_1 = require("../../hatly.constants");
 const installment_service_1 = require("../../Installment/installment.service");
+const installment_entity_1 = require("../../Installment/entities/installment.entity");
+const branch_entity_1 = require("../../branch/entities/branch.entity");
 let StudentService = class StudentService {
-    constructor(studentRepository, cloudinary, installmentPay) {
+    constructor(studentRepository, installmentRepository, branchRepository, cloudinary, installmentService) {
         this.studentRepository = studentRepository;
+        this.installmentRepository = installmentRepository;
+        this.branchRepository = branchRepository;
         this.cloudinary = cloudinary;
-        this.installmentPay = installmentPay;
+        this.installmentService = installmentService;
     }
     async create(createStudentDto) {
+        const { branchId, nationalId, section, phoneNumber } = createStudentDto;
+        if (phoneNumber) {
+            const existingStudentByPhone = await this.studentRepository.findOneBy({
+                phoneNumber: phoneNumber,
+            });
+            if (existingStudentByPhone) {
+                throw new common_1.ConflictException('Student with this phone number already exists');
+            }
+        }
+        const branch = await this.branchRepository.findOneBy({ id: branchId });
+        if (!branch) {
+            throw new common_1.BadRequestException(`Branch with ID "${branchId}" not found`);
+        }
+        const branchInitial = branch.name.charAt(0).toUpperCase();
+        const sectionInitial = section.charAt(0).toUpperCase();
+        const nationalIdSuffix = nationalId.slice(-6);
+        const generatedId = `${branchInitial}${sectionInitial}-${nationalIdSuffix}`;
+        const existingStudentById = await this.studentRepository.findOneBy({
+            id: generatedId,
+        });
+        if (existingStudentById) {
+            throw new common_1.ConflictException(`A student with the generated ID "${generatedId}" already exists. This may indicate a duplicate national ID.`);
+        }
         const totalAmount = createStudentDto.totalAmount || 0;
         const downPayment = createStudentDto.downPayment || 0;
-        const remainingDownPayment = createStudentDto.remainingDownPayment ?? downPayment;
+        const remainingDownPayment = createStudentDto.remainingDownPayment || 0;
         if (totalAmount <= downPayment) {
-            throw new common_1.BadRequestException(`قيمة المبلغ الكلي (${totalAmount}) يجب أن تكون أكبر من المقدم (${downPayment})`);
+            throw new common_1.BadRequestException('Total amount must be greater than down payment');
         }
-        if (remainingDownPayment >= downPayment) {
-            throw new common_1.BadRequestException(`باقي المقدم (${remainingDownPayment}) يجب أن يكون اصغر من او يساوي المقدم (${downPayment})`);
-        }
-        const student = this.studentRepository.create({
+        const actualPaidOnCreate = downPayment - remainingDownPayment;
+        const studentData = {
             ...createStudentDto,
-            remainingDownPayment,
+            id: generatedId,
+            branch: branch,
+            paidAmount: actualPaidOnCreate,
+            remainingBalance: totalAmount - actualPaidOnCreate,
             installmentStage: 0,
-        });
+        };
+        delete studentData.branchId;
+        const student = this.studentRepository.create(studentData);
         const savedStudent = await this.studentRepository.save(student);
-        const remainingAmount = totalAmount - downPayment;
-        const monthlyInstallment = remainingAmount / 12;
-        const installments = [];
-        if (remainingDownPayment > 0) {
-            const installment = await this.installmentPay.create({
-                studentId: savedStudent.id,
-                installmentNumber: 0,
-                amount: remainingDownPayment,
-                monthNumber: 0,
-                cashReceiver: createStudentDto.cashReceiver || 'Admin',
-                installmentStage: 0,
-            });
-            installments.push(installment);
-            student.remainingDownPayment = 0;
+        if (savedStudent.remainingDownPayment &&
+            savedStudent.remainingDownPayment > 0) {
+            await this.installmentService.createInitialInstallment(savedStudent);
         }
-        for (let i = 1; i <= 12; i++) {
-            const installment = await this.installmentPay.create({
-                studentId: savedStudent.id,
-                installmentNumber: i,
-                amount: monthlyInstallment,
-                monthNumber: i,
-                cashReceiver: createStudentDto.cashReceiver || 'Admin',
-                installmentStage: 1,
-            });
-            installments.push(installment);
+        else {
+            await this.installmentService.createMonthlyInstallments(savedStudent);
+            savedStudent.installmentStage = 1;
+            await this.studentRepository.save(savedStudent);
         }
-        student.installmentStage = 1;
+        return this.findOne(savedStudent.id);
+    }
+    async payInstallment(studentId, dto) {
+        const student = await this.studentRepository.findOneBy({ id: studentId });
+        if (!student) {
+            throw new common_1.NotFoundException('Student not found');
+        }
+        const currentInstallment = await this.installmentRepository.findOne({
+            where: {
+                studentId: student.id,
+                installmentNumber: student.installmentStage,
+            },
+        });
+        if (!currentInstallment) {
+            throw new common_1.NotFoundException('No active installment found for the current stage');
+        }
+        if (dto.amount > currentInstallment.remainingAmount) {
+            throw new common_1.BadRequestException('القيمة المالية اكبر من القيمة المستحقة ');
+        }
+        currentInstallment.amountPaid += dto.amount;
+        currentInstallment.remainingAmount -= dto.amount;
+        currentInstallment.paymentHistory.push({
+            amount: dto.amount,
+            paidAt: new Date(),
+            cashReceiver: dto.cashReceiver,
+        });
+        student.paidAmount += dto.amount;
+        student.remainingBalance -= dto.amount;
+        await this.installmentRepository.save(currentInstallment);
+        if (currentInstallment.remainingAmount <= 0) {
+            const wasInitialPaymentStage = student.installmentStage === 0;
+            student.installmentStage += 1;
+            if (wasInitialPaymentStage) {
+                await this.installmentService.createMonthlyInstallments(student);
+            }
+        }
         await this.studentRepository.save(student);
-        return savedStudent;
+        return this.findOne(student.id);
     }
     async findAll() {
         const students = await this.studentRepository.find({
-            relations: ['teachers', 'lessons', 'installments'],
+            relations: ['teachers', 'lessons', 'installments', 'branch'],
         });
         return { students };
     }
     async findOne(id) {
         const student = await this.studentRepository.findOne({
             where: { id },
-            relations: ['teachers', 'lessons'],
+            relations: ['teachers', 'lessons', 'installments', 'branch'],
         });
         if (!student) {
             throw new common_1.NotFoundException('Student not found');
@@ -90,53 +137,29 @@ let StudentService = class StudentService {
     }
     async findByPhoneNumber(phoneNumber) {
         const student = await this.studentRepository.findOne({
-            where: { phoneNumber: phoneNumber },
-            relations: ['teachers', 'lessons'],
+            where: { phoneNumber },
+            relations: ['teachers', 'lessons', 'branch'],
         });
         if (!student) {
-            throw new common_1.NotFoundException('Student not found');
+            throw new common_1.NotFoundException('Student not found with this phone number');
         }
-        return { student };
+        return student;
     }
-    async findById(id) {
+    async findByManualEntryId(manualEntryId) {
         const student = await this.studentRepository.findOne({
-            where: { id: id },
-            relations: ['teachers', 'lessons'],
+            where: { manualEntryId },
+            relations: ['teachers', 'lessons', 'branch'],
         });
         if (!student) {
-            throw new common_1.NotFoundException('Student not found');
+            throw new common_1.NotFoundException('Student not found with this manual ID');
         }
-        return { student };
+        return student;
     }
     async update(id, updateStudentDto) {
         const student = await this.findOne(id);
-        if (updateStudentDto.phoneNumber && updateStudentDto.phoneNumber !== student.phoneNumber) {
-            const existingStudent = await this.studentRepository.findOne({
-                where: { phoneNumber: updateStudentDto.phoneNumber },
-            });
-            if (existingStudent) {
-                throw new common_1.ConflictException('Student with this phone number already exists');
-            }
-        }
-        if (updateStudentDto.manualEntryId && updateStudentDto.manualEntryId !== student.manualEntryId) {
-            const existingManualId = await this.studentRepository.findOne({
-                where: { manualEntryId: updateStudentDto.manualEntryId },
-            });
-            if (existingManualId) {
-                throw new common_1.ConflictException('Student with this manualEntryId already exists');
-            }
-        }
-        if (updateStudentDto.profilePhoto && !updateStudentDto.profilePhoto.startsWith('http')) {
-            updateStudentDto.profilePhoto = await this.cloudinary.uploadBase64(updateStudentDto.profilePhoto, hatly_constants_1.PROFILE_PHOTO_FILE, `student_${updateStudentDto.phoneNumber || Date.now()}`);
-        }
-        if (updateStudentDto.notes) {
-            updateStudentDto.notes = updateStudentDto.notes.map(note => ({
-                ...note,
-                createdAt: note.createdAt || new Date(),
-            }));
-        }
         Object.assign(student, updateStudentDto);
-        return await this.studentRepository.save(student);
+        await this.studentRepository.save(student);
+        return this.findOne(id);
     }
     async remove(id) {
         const student = await this.findOne(id);
@@ -150,7 +173,7 @@ let StudentService = class StudentService {
         if (!student) {
             throw new common_1.NotFoundException('Student not found');
         }
-        return { teachers: student.teachers };
+        return student.teachers;
     }
     async getStudentLessons(id) {
         const student = await this.studentRepository.findOne({
@@ -160,24 +183,18 @@ let StudentService = class StudentService {
         if (!student) {
             throw new common_1.NotFoundException('Student not found');
         }
-        return { lessons: student.lessons };
-    }
-    async findByManualEntryId(manualEntryId) {
-        const student = await this.studentRepository.findOne({
-            where: { manualEntryId: manualEntryId },
-            relations: ['teachers', 'lessons'],
-        });
-        if (!student) {
-            throw new common_1.NotFoundException('Student not found');
-        }
-        return { student };
+        return student.lessons;
     }
 };
 exports.StudentService = StudentService;
 exports.StudentService = StudentService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(student_entity_1.Student)),
+    __param(1, (0, typeorm_1.InjectRepository)(installment_entity_1.Installment)),
+    __param(2, (0, typeorm_1.InjectRepository)(branch_entity_1.Branch)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         cloudinary_service_1.CloudinaryService,
         installment_service_1.InstallmentService])
 ], StudentService);

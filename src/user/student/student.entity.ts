@@ -6,16 +6,17 @@ import {
   UpdateDateColumn,
   ManyToMany,
   OneToMany,
-  BeforeInsert,
+  JoinColumn,
+  ManyToOne,
 } from 'typeorm';
 import { Teacher } from '../teacher/teacher.entity';
 import { Lesson } from '../../lesson/entities/lesson.entity';
 import { Installment } from 'src/Installment/entities/installment.entity';
-import { ulid } from 'ulid';
+import { Branch } from 'src/branch/entities/branch.entity';
 
 @Entity('students')
 export class Student {
-  @PrimaryColumn()
+  @PrimaryColumn({ type: 'varchar', length: 20 })
   id: string;
 
   @Column()
@@ -24,7 +25,7 @@ export class Student {
   @Column()
   lastName: string;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, unique: true })
   phoneNumber?: string;
 
   @Column({ type: 'varchar', nullable: true })
@@ -39,16 +40,11 @@ export class Student {
   @Column({ nullable: true })
   grade?: string;
 
-
-
   @Column({ nullable: true })
   nationalId?: string;
 
   @Column({ nullable: true })
   location?: string;
-
-  @Column({ nullable: true })
-  branchId?: string;
 
   @Column({ type: 'jsonb', nullable: true, default: [] })
   notes: { text: string; createdAt: Date }[];
@@ -61,26 +57,32 @@ export class Student {
 
   @Column({ type: 'int', default: 0 })
   installmentStage: number;
-  //  المبلغ الكلي
+
   @Column({ type: 'float', nullable: true })
   totalAmount?: number;
 
-  //  المقدم
   @Column({ type: 'float', nullable: true })
   downPayment?: number;
 
-  //  باقي المقدم
   @Column({ type: 'float', nullable: true })
   remainingDownPayment?: number;
 
-  //  من خلال الشخص
+  @Column({ type: 'float', default: 0 })
+  paidAmount: number;
+
+  @Column({ type: 'float', nullable: true })
+  remainingBalance: number;
+
   @Column({ type: 'varchar', nullable: true })
   throughPerson?: string;
+
+  @ManyToOne(() => Branch, (branch) => branch.students, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'branchId' })
+  branch: Branch;
 
   @Column({ type: 'varchar', nullable: true })
   cashReceiver?: string;
 
-  //  رقم الإيصال
   @Column({ nullable: true })
   receiptNumber?: string;
 
@@ -90,22 +92,14 @@ export class Student {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // Relationship with Teachers
   @ManyToMany(() => Teacher, (teacher) => teacher.students)
   teachers: Teacher[];
 
-
   @ManyToMany(() => Lesson, (lesson) => lesson.students)
   lessons: Lesson[];
-
 
   @OneToMany(() => Installment, (installment) => installment.student, {
     cascade: true,
   })
   installments: Installment[];
-
-  @BeforeInsert()
-  generateId() {
-    this.id = ulid();
-  }
 }

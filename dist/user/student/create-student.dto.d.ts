@@ -4,18 +4,17 @@ export declare class CreateStudentDto {
     phoneNumber?: string;
     whatsapp?: string;
     parentPhoneNumber?: string;
-    section?: string;
+    section: string;
     grade?: string;
-    nationalId?: string;
+    nationalId: string;
     location?: string;
-    branchId?: string;
+    branchId: string;
     notes?: {
         text: string;
         createdAt?: Date;
     }[];
     profilePhoto?: string;
     manualEntryId?: string;
-    id?: string;
     totalAmount?: number;
     downPayment?: number;
     remainingDownPayment?: number;
