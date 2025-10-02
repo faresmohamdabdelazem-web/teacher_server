@@ -27,6 +27,10 @@ export class CreateInstallmentDto {
   @IsNotEmpty()
   @IsString()
   cashReceiver: string;
+  
+  @IsNotEmpty()
+  @IsString()
+  numberOfInstallment: string;
 
   @IsNotEmpty()
   @IsString()

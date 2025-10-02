@@ -15,6 +15,7 @@ export declare class Student {
     location?: string;
     notes: {
         text: string;
+        descroption: string;
         createdAt: Date;
     }[];
     profilePhoto?: string;

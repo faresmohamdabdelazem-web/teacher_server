@@ -10,7 +10,8 @@ export declare class CreateStudentDto {
     location?: string;
     branchId: string;
     notes?: {
-        text: string;
+        title: string;
+        descroption: string;
         createdAt?: Date;
     }[];
     profilePhoto?: string;

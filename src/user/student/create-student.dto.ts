@@ -52,7 +52,7 @@ export class CreateStudentDto {
   branchId: string;
 
   @IsOptional()
-  notes?: { text: string; createdAt?: Date }[];
+  notes?: {title: string;descroption:string ;createdAt?: Date }[];
 
   @IsOptional()
   @IsBase64OrURL()

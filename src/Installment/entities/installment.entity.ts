@@ -34,6 +34,9 @@ export class Installment {
   @Column({ nullable: true })
   cashReceiver: string;
 
+  @Column({ nullable: true })
+  numberOfInstallment: string;
+
   @Column('float')
   amount: number;
 
