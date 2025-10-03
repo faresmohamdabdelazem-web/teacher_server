@@ -48,8 +48,11 @@ exports.AppModule = AppModule = __decorate([
                     type: 'postgres',
                     url: config.get('DATABASE_URL'),
                     autoLoadEntities: true,
-                    synchronize: true,
-                    ssl: false,
+                    synchronize: false,
+                    ssl: true,
+                    extra: {
+                        ssl: { rejectUnauthorized: false },
+                    },
                 }),
             }),
             auth_module_1.AuthModule,
@@ -61,7 +64,9 @@ exports.AppModule = AppModule = __decorate([
             mail_module_1.MailModule,
             mailer_1.MailerModule.forRoot({
                 transport: {
-                    service: process.env.MAIL_HOST,
+                    host: process.env.MAIL_HOST || 'smtp.gmail.com',
+                    port: parseInt(process.env.MAIL_PORT || '465'),
+                    secure: (process.env.MAIL_SECURE || 'true') === 'true',
                     auth: {
                         user: process.env.USER_EMAIL,
                         pass: process.env.EMAIL_PASS,

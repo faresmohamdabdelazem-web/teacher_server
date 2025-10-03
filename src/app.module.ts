@@ -30,8 +30,11 @@ import { SectionModule } from './section/section.module';
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
-        synchronize: true,
-        ssl: false,
+        synchronize: false,
+        ssl: true,
+        extra: {
+          ssl: { rejectUnauthorized: false },
+        },
       }),
     }),
     AuthModule,
@@ -43,7 +46,9 @@ import { SectionModule } from './section/section.module';
     MailModule,
     MailerModule.forRoot({
       transport: {
-        service: process.env.MAIL_HOST,
+        host: process.env.MAIL_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.MAIL_PORT || '465'),
+        secure: (process.env.MAIL_SECURE || 'true') === 'true',
         auth: {
           user: process.env.USER_EMAIL,
           pass: process.env.EMAIL_PASS,
