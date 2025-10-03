@@ -15,8 +15,6 @@ const config_1 = require("@nestjs/config");
 const cloudinary_module_1 = require("./cloudinary/cloudinary.module");
 const mail_module_1 = require("./mail/mail.module");
 const mailer_1 = require("@nestjs-modules/mailer");
-const path_1 = require("path");
-const handlebars_adapter_1 = require("@nestjs-modules/mailer/dist/adapters/handlebars.adapter");
 const assets_module_1 = require("./assets/assets.module");
 const notification_module_1 = require("./notification/notification.module");
 const typeorm_1 = require("@nestjs/typeorm");
@@ -74,10 +72,6 @@ exports.AppModule = AppModule = __decorate([
                 },
                 defaults: {
                     from: `"no-reply@hatly.tech`,
-                },
-                template: {
-                    dir: (0, path_1.join)(__dirname, 'mail', 'templates'),
-                    adapter: new handlebars_adapter_1.HandlebarsAdapter(),
                 },
             }),
             assets_module_1.AssetsModule,

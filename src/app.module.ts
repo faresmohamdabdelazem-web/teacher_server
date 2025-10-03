@@ -6,8 +6,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { MailModule } from './mail/mail.module';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { join } from 'path';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { AssetsModule } from './assets/assets.module';
 import { NotificationModule } from './notification/notification.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -56,10 +54,6 @@ import { SectionModule } from './section/section.module';
       },
       defaults: {
         from: `"no-reply@hatly.tech`,
-      },
-      template: {
-        dir: join(__dirname, 'mail', 'templates'),
-        adapter: new HandlebarsAdapter(),
       },
     }),
     AssetsModule,
