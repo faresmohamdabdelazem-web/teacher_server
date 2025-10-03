@@ -15,6 +15,7 @@ import { LessonModule } from './lesson/lesson.module';
 import { AdminController } from './admin/admin.controller';
 import { InstallmentModule } from './Installment/installment.module';
 import { BranchModule } from './branch/branch.module';
+import { SectionModule } from './section/section.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { BranchModule } from './branch/branch.module';
       }),
     }),
     AuthModule,
+    SectionModule,
     UserModule,
     InstallmentModule,
     BranchModule,

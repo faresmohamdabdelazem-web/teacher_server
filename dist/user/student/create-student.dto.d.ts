@@ -1,14 +1,15 @@
 export declare class CreateStudentDto {
     firstName: string;
     lastName: string;
+    nationalId: string;
+    branchId: string;
+    sectionId: string;
+    paidDownPayment?: number;
     phoneNumber?: string;
     whatsapp?: string;
     parentPhoneNumber?: string;
-    section: string;
     grade?: string;
-    nationalId: string;
     location?: string;
-    branchId: string;
     notes?: {
         title: string;
         descroption: string;
@@ -16,9 +17,6 @@ export declare class CreateStudentDto {
     }[];
     profilePhoto?: string;
     manualEntryId?: string;
-    totalAmount?: number;
-    downPayment?: number;
-    remainingDownPayment?: number;
     throughPerson?: string;
     cashReceiver?: string;
     receiptNumber?: string;

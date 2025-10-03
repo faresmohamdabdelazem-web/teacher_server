@@ -61,6 +61,7 @@ export class Installment {
     amount: number;
     paidAt: Date;
     cashReceiver: string;
+    receiptNumber: string;
   }[];
 
   @ManyToOne(() => Student, (student) => student.installments, {

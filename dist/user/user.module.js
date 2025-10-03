@@ -31,6 +31,9 @@ const whatsapp_service_1 = require("../notification/whatsapp.service");
 const installment_module_1 = require("../Installment/installment.module");
 const installment_entity_1 = require("../Installment/entities/installment.entity");
 const branch_entity_1 = require("../branch/entities/branch.entity");
+const section_module_1 = require("../section/section.module");
+const section_entity_1 = require("../section/entities/section.entity");
+const branch_module_1 = require("../branch/branch.module");
 let UserModule = class UserModule {
 };
 exports.UserModule = UserModule;
@@ -43,6 +46,7 @@ exports.UserModule = UserModule = __decorate([
                 student_entity_1.Student,
                 assistant_entity_1.Assistant,
                 branch_entity_1.Branch,
+                section_entity_1.Section,
                 lesson_entity_1.Lesson,
                 lesson_attendance_entity_1.LessonAttendance,
                 installment_entity_1.Installment,
@@ -50,6 +54,8 @@ exports.UserModule = UserModule = __decorate([
             cloudinary_module_1.CloudinaryModule,
             installment_module_1.InstallmentModule,
             notification_module_1.NotificationModule,
+            section_module_1.SectionModule,
+            branch_module_1.BranchModule,
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
         ],
         controllers: [

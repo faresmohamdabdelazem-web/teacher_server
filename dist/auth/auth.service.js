@@ -199,7 +199,7 @@ let AuthService = class AuthService {
             lastName: createStudentDto.lastName,
             phoneNumber: createStudentDto.phoneNumber,
             parentPhoneNumber: createStudentDto.parentPhoneNumber,
-            section: createStudentDto.section,
+            sectionId: createStudentDto.sectionId,
             nationalId: createStudentDto.nationalId,
             branchId: createStudentDto.branchId
         });

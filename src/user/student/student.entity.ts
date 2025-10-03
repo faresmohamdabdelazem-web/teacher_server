@@ -13,12 +13,14 @@ import { Teacher } from '../teacher/teacher.entity';
 import { Lesson } from '../../lesson/entities/lesson.entity';
 import { Installment } from 'src/Installment/entities/installment.entity';
 import { Branch } from 'src/branch/entities/branch.entity';
+import { Section } from 'src/section/entities/section.entity'; // --- إضافة جديدة ---
 
 @Entity('students')
 export class Student {
   @PrimaryColumn({ type: 'varchar', length: 20 })
   id: string;
 
+  // ... (firstName, lastName, etc. remain the same)
   @Column()
   firstName: string;
 
@@ -33,9 +35,8 @@ export class Student {
 
   @Column({ type: 'varchar', nullable: true })
   parentPhoneNumber?: string;
-
-  @Column({ nullable: true })
-  section?: string;
+  
+  // --- تم حذف الحقل النصي القديم للقسم ---
 
   @Column({ nullable: true })
   grade?: string;
@@ -79,6 +80,15 @@ export class Student {
   @ManyToOne(() => Branch, (branch) => branch.students, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'branchId' })
   branch: Branch;
+
+  // --- بداية التعديل: إضافة علاقة مع القسم ---
+  @ManyToOne(() => Section, (section) => section.students, { eager: true }) // eager لجلب القسم مع الطالب دائمًا
+  @JoinColumn({ name: 'sectionId' })
+  section: Section;
+
+  @Column({ type: 'uuid', nullable: true })
+  sectionId: string;
+  // --- نهاية التعديل ---
 
   @Column({ type: 'varchar', nullable: true })
   cashReceiver?: string;

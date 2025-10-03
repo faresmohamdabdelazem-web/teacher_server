@@ -15,6 +15,7 @@ const teacher_entity_1 = require("../teacher/teacher.entity");
 const lesson_entity_1 = require("../../lesson/entities/lesson.entity");
 const installment_entity_1 = require("../../Installment/entities/installment.entity");
 const branch_entity_1 = require("../../branch/entities/branch.entity");
+const section_entity_1 = require("../../section/entities/section.entity");
 let Student = class Student {
 };
 exports.Student = Student;
@@ -42,10 +43,6 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', nullable: true }),
     __metadata("design:type", String)
 ], Student.prototype, "parentPhoneNumber", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Student.prototype, "section", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
@@ -103,6 +100,15 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'branchId' }),
     __metadata("design:type", branch_entity_1.Branch)
 ], Student.prototype, "branch", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => section_entity_1.Section, (section) => section.students, { eager: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'sectionId' }),
+    __metadata("design:type", section_entity_1.Section)
+], Student.prototype, "section", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], Student.prototype, "sectionId", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', nullable: true }),
     __metadata("design:type", String)

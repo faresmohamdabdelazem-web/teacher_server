@@ -5,8 +5,11 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { Student } from 'src/user/student/student.entity';
+import { Section } from 'src/section/entities/section.entity';
 
 @Entity('branches')
 export class Branch {
@@ -30,4 +33,14 @@ export class Branch {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+
+
+    @ManyToMany(() => Section, (section) => section.branches)
+  @JoinTable({
+    name: 'branch_sections', 
+    joinColumn: { name: 'branchId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'sectionId', referencedColumnName: 'id' },
+  })
+  sections: Section[];
 }
