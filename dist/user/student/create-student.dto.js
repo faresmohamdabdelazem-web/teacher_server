@@ -27,6 +27,29 @@ __decorate([
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "lastName", void 0);
 __decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Length)(14, 14, { message: 'National ID must be exactly 14 digits' }),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "nationalId", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsUUID)('4', { message: 'Branch ID must be a valid UUID.' }),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "branchId", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsUUID)('4', { message: 'Section ID must be a valid UUID.' }),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "sectionId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], CreateStudentDto.prototype, "paidDownPayment", void 0);
+__decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
@@ -42,31 +65,15 @@ __decorate([
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "parentPhoneNumber", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateStudentDto.prototype, "section", void 0);
-__decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "grade", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.Length)(14, 14, { message: 'National ID must be exactly 14 digits' }),
-    __metadata("design:type", String)
-], CreateStudentDto.prototype, "nationalId", void 0);
-__decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "location", void 0);
-__decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsUUID)('4', { message: 'Branch ID must be a valid UUID.' }),
-    __metadata("design:type", String)
-], CreateStudentDto.prototype, "branchId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Array)
@@ -81,24 +88,6 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "manualEntryId", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Type)(() => Number),
-    (0, class_validator_1.IsNumber)(),
-    __metadata("design:type", Number)
-], CreateStudentDto.prototype, "totalAmount", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Type)(() => Number),
-    (0, class_validator_1.IsNumber)(),
-    __metadata("design:type", Number)
-], CreateStudentDto.prototype, "downPayment", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Type)(() => Number),
-    (0, class_validator_1.IsNumber)(),
-    __metadata("design:type", Number)
-], CreateStudentDto.prototype, "remainingDownPayment", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

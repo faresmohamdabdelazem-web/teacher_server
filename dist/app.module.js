@@ -24,6 +24,7 @@ const lesson_module_1 = require("./lesson/lesson.module");
 const admin_controller_1 = require("./admin/admin.controller");
 const installment_module_1 = require("./Installment/installment.module");
 const branch_module_1 = require("./branch/branch.module");
+const section_module_1 = require("./section/section.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -52,6 +53,7 @@ exports.AppModule = AppModule = __decorate([
                 }),
             }),
             auth_module_1.AuthModule,
+            section_module_1.SectionModule,
             user_module_1.UserModule,
             installment_module_1.InstallmentModule,
             branch_module_1.BranchModule,

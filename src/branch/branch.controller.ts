@@ -42,8 +42,29 @@ export class BranchController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT) // لإرجاع استجابة 204 عند الحذف الناجح
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.branchService.remove(id);
   }
+
+  // --- بداية الإضافة: Endpoint لربط قسم بفرع ---
+  @Post(':branchId/sections/:sectionId')
+  addSectionToBranch(
+    @Param('branchId', ParseUUIDPipe) branchId: string,
+    @Param('sectionId', ParseUUIDPipe) sectionId: string,
+  ) {
+    return this.branchService.addSectionToBranch(branchId, sectionId);
+  }
+  // --- نهاية الإضافة ---
+
+  // --- بداية الإضافة: Endpoint لإزالة ربط قسم بفرع ---
+  @Delete(':branchId/sections/:sectionId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeSectionFromBranch(
+    @Param('branchId', ParseUUIDPipe) branchId: string,
+    @Param('sectionId', ParseUUIDPipe) sectionId: string,
+  ) {
+    return this.branchService.removeSectionFromBranch(branchId, sectionId);
+  }
+  // --- نهاية الإضافة ---
 }

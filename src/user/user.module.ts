@@ -22,6 +22,9 @@ import { WhatsAppService } from 'src/notification/whatsapp.service';
 import { InstallmentModule } from 'src/Installment/installment.module';
 import { Installment } from 'src/Installment/entities/installment.entity'; // <-- الخطوة 1: استيراد الكيان
 import { Branch } from 'src/branch/entities/branch.entity';
+import { SectionModule } from 'src/section/section.module';
+import { Section } from 'src/section/entities/section.entity';
+import { BranchModule } from 'src/branch/branch.module';
 
 @Module({
   imports: [
@@ -31,6 +34,7 @@ import { Branch } from 'src/branch/entities/branch.entity';
       Student,
       Assistant,
       Branch,
+      Section,
       Lesson,
       LessonAttendance,
       Installment, // <-- الخطوة 2: أضف Installment هنا
@@ -38,6 +42,8 @@ import { Branch } from 'src/branch/entities/branch.entity';
     CloudinaryModule,
     InstallmentModule,
     NotificationModule,
+    SectionModule,
+    BranchModule,
     forwardRef(() => AuthModule),
   ],
   controllers: [

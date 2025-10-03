@@ -2,6 +2,7 @@ import { Teacher } from '../teacher/teacher.entity';
 import { Lesson } from '../../lesson/entities/lesson.entity';
 import { Installment } from 'src/Installment/entities/installment.entity';
 import { Branch } from 'src/branch/entities/branch.entity';
+import { Section } from 'src/section/entities/section.entity';
 export declare class Student {
     id: string;
     firstName: string;
@@ -9,7 +10,6 @@ export declare class Student {
     phoneNumber?: string;
     whatsapp?: string;
     parentPhoneNumber?: string;
-    section?: string;
     grade?: string;
     nationalId?: string;
     location?: string;
@@ -28,6 +28,8 @@ export declare class Student {
     remainingBalance: number;
     throughPerson?: string;
     branch: Branch;
+    section: Section;
+    sectionId: string;
     cashReceiver?: string;
     receiptNumber?: string;
     createdAt: Date;
