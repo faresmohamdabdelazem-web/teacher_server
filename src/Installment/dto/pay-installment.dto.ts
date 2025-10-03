@@ -7,7 +7,7 @@ export class PayInstallmentDto {
 
   @IsNotEmpty()
   @IsNumber()
-  @Min(0.01, { message: 'Payment amount must be greater than zero.' })
+  @Min(0.01, { message: 'المبلغ المدفوع يجب ان يكون اكبر من الصفر' })
   amount: number;
 
   @IsNotEmpty()
