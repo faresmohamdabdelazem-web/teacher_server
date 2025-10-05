@@ -1,7 +1,13 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+
+export enum PaymentType {
+  PARTIAL = 'PARTIAL_PAYMENT',
+  FULL = 'FULL_INSTALLMENT',
+  DOWN_PAYMENT = 'DOWN_PAYMENT',
+}
 
 export class PayInstallmentDto {
-  @IsOptional()
+  @IsNotEmpty()
   @IsNumber()
   installmentNumber: number;
 
@@ -17,4 +23,8 @@ export class PayInstallmentDto {
   @IsNotEmpty()
   @IsString()
   receiptNumber: string;
+
+  @IsNotEmpty()
+  @IsEnum(PaymentType)
+  paymentType: PaymentType;
 }

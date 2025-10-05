@@ -17,7 +17,10 @@ export class Branch {
   id: string;
 
   @Column({ unique: true })
-  name: string;
+  name: string
+
+  @Column({ unique: true, nullable: true })
+  nameAr: string
 
   @Column({ nullable: true })
   address: string;
@@ -36,9 +39,9 @@ export class Branch {
 
 
 
-    @ManyToMany(() => Section, (section) => section.branches)
+  @ManyToMany(() => Section, (section) => section.branches)
   @JoinTable({
-    name: 'branch_sections', 
+    name: 'branch_sections',
     joinColumn: { name: 'branchId', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'sectionId', referencedColumnName: 'id' },
   })

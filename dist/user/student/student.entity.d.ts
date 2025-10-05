@@ -3,6 +3,7 @@ import { Lesson } from '../../lesson/entities/lesson.entity';
 import { Installment } from 'src/Installment/entities/installment.entity';
 import { Branch } from 'src/branch/entities/branch.entity';
 import { Section } from 'src/section/entities/section.entity';
+import { PaymentType } from 'src/Installment/dto/pay-installment.dto';
 export declare class Student {
     id: string;
     firstName: string;
@@ -32,6 +33,15 @@ export declare class Student {
     sectionId: string;
     cashReceiver?: string;
     receiptNumber?: string;
+    paymentHistory: {
+        amount: number;
+        paidAt: Date;
+        cashReceiver: string;
+        receiptNumber: string;
+        installmentNumber: number;
+        paymentType: PaymentType;
+    }[];
+    isLate?: boolean;
     createdAt: Date;
     updatedAt: Date;
     teachers: Teacher[];

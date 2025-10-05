@@ -18,6 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const student_entity_1 = require("./student.entity");
 const installment_service_1 = require("../../Installment/installment.service");
+const pay_installment_dto_1 = require("../../Installment/dto/pay-installment.dto");
 const installment_entity_1 = require("../../Installment/entities/installment.entity");
 const branch_entity_1 = require("../../branch/entities/branch.entity");
 const section_entity_1 = require("../../section/entities/section.entity");
@@ -29,15 +30,34 @@ let StudentService = class StudentService {
         this.sectionRepository = sectionRepository;
         this.installmentService = installmentService;
     }
+    recalculateStudentFinancials(student) {
+        if (!student.installments) {
+            return student;
+        }
+        const downPaymentInstallment = student.installments.find(inst => inst.installmentNumber === 0);
+        student.remainingDownPayment = downPaymentInstallment
+            ? downPaymentInstallment.remainingAmount
+            : 0;
+        student.remainingBalance = student.totalAmount - student.paidAmount;
+        const currentDate = new Date();
+        const requiredInstallment = student.installments.find(inst => {
+            return inst.dueDate < currentDate && inst.status !== installment_entity_1.InstallmentStatus.PAID;
+        });
+        student.isLate = !!requiredInstallment;
+        return student;
+    }
     async create(createStudentDto) {
-        const { branchId, sectionId, phoneNumber, nationalId } = createStudentDto;
+        const { branchId, sectionId, phoneNumber } = createStudentDto;
         if (phoneNumber) {
             const existingStudentByPhone = await this.studentRepository.findOneBy({ phoneNumber });
             if (existingStudentByPhone) {
                 throw new common_1.ConflictException('Student with this phone number already exists');
             }
         }
-        const branch = await this.branchRepository.findOne({ where: { id: branchId }, relations: ['sections'] });
+        const branch = await this.branchRepository.findOne({
+            where: { id: branchId },
+            relations: ['sections'],
+        });
         if (!branch) {
             throw new common_1.BadRequestException(`Branch with ID "${branchId}" not found`);
         }
@@ -69,31 +89,42 @@ let StudentService = class StudentService {
         if (existingStudentById) {
             throw new common_1.ConflictException(`A student with the generated ID "${generatedId}" already exists. Please try again.`);
         }
-        const totalAmount = section.totalAmount;
-        const downPayment = section.downPayment;
-        const paidDownPayment = createStudentDto.paidDownPayment || 0;
+        const totalAmount = createStudentDto.totalAmount;
+        const downPayment = createStudentDto.downPayment;
+        const remainingDownPayment = createStudentDto.remainingDownPayment ?? 0;
+        const paidDownPayment = downPayment - remainingDownPayment;
         if (paidDownPayment > downPayment) {
             throw new common_1.BadRequestException('Paid down payment cannot be greater than the required down payment');
         }
-        const remainingDownPayment = downPayment - paidDownPayment;
         const paidAmount = paidDownPayment;
         const studentData = {
             ...createStudentDto,
             id: generatedId,
-            branch: branch,
-            section: section,
-            totalAmount: totalAmount,
-            downPayment: downPayment,
-            remainingDownPayment: remainingDownPayment,
-            paidAmount: paidAmount,
+            branch,
+            section,
+            totalAmount,
+            downPayment,
+            remainingDownPayment,
+            paidAmount,
             remainingBalance: totalAmount - paidAmount,
             installmentStage: 0,
+            paymentHistory: [],
         };
         delete studentData.branchId;
         delete studentData.sectionId;
-        delete studentData.paidDownPayment;
         const student = this.studentRepository.create(studentData);
         const savedStudent = await this.studentRepository.save(student);
+        if (paidDownPayment > 0) {
+            savedStudent.paymentHistory.push({
+                amount: paidDownPayment,
+                paidAt: new Date(),
+                cashReceiver: savedStudent.cashReceiver || 'Admin',
+                receiptNumber: `DP-${Date.now()}`,
+                installmentNumber: 0,
+                paymentType: pay_installment_dto_1.PaymentType.DOWN_PAYMENT,
+            });
+            await this.studentRepository.save(savedStudent);
+        }
         if (savedStudent.remainingDownPayment > 0) {
             await this.installmentService.createInitialInstallment(savedStudent);
         }
@@ -105,50 +136,89 @@ let StudentService = class StudentService {
         return this.findOne(savedStudent.id);
     }
     async payInstallment(studentId, dto) {
-        const student = await this.studentRepository.findOneBy({ id: studentId });
+        const student = await this.studentRepository.findOne({
+            where: { id: studentId },
+            relations: ['installments'],
+        });
         if (!student) {
             throw new common_1.NotFoundException('Student not found');
         }
-        const targetInstallment = await this.installmentRepository.findOne({
-            where: {
-                studentId: student.id,
-                installmentNumber: dto.installmentNumber,
-            },
-        });
-        if (!targetInstallment) {
-            throw new common_1.NotFoundException('The specified installment does not exist for this student');
+        const nextDueInstallment = student.installments.find((inst) => inst.remainingAmount > 0);
+        if (!nextDueInstallment && dto.paymentType === pay_installment_dto_1.PaymentType.DOWN_PAYMENT) {
+            throw new common_1.BadRequestException(`✅ لقد انتهيت من جميع الأقساط بالفعل. لا يمكنك دفع دفعة مقدمة بعد الآن. 
+يرجى اختيار "جزء من القسط" أو "دفع كامل القسط" إذا كان هناك قسط جديد.`);
         }
+        if (!nextDueInstallment) {
+            throw new common_1.BadRequestException('جميع الأقساط تم سدادها بالكامل!');
+        }
+        const months = [
+            'أكتوبر',
+            'نوفمبر',
+            'ديسمبر',
+            'يناير',
+            'فبراير',
+            'مارس',
+            'أبريل',
+            'مايو',
+            'يونيو',
+            'يوليو',
+            'أغسطس',
+            'سبتمبر',
+        ];
+        const nextMonthIndex = (nextDueInstallment.installmentNumber - 1) % 12;
+        const nextMonthName = months[nextMonthIndex];
+        if (dto.installmentNumber !== nextDueInstallment.installmentNumber) {
+            throw new common_1.BadRequestException(`لا يمكنك دفع هذا القسط الآن. القسط المستحق الحالي هو ر (${nextMonthName}) بمبلغ ${nextDueInstallment.remainingAmount} جنيه.`);
+        }
+        const targetInstallment = nextDueInstallment;
         if (targetInstallment.status === installment_entity_1.InstallmentStatus.PAID) {
-            throw new common_1.BadRequestException('This installment is already fully paid');
+            throw new common_1.BadRequestException('✅ هذا القسط تم سداده بالكامل بالفعل.');
+        }
+        if (dto.paymentType === pay_installment_dto_1.PaymentType.FULL &&
+            dto.amount < targetInstallment.remainingAmount) {
+            throw new common_1.BadRequestException(` المبلغ المدخل (${dto.amount} جنيه) لا يغطي القسط بالكامل (${targetInstallment.remainingAmount} جنيه). 
+يرجى اختيار نوع الدفع "جزء من القسط" بدلاً من "دفع كامل القسط".`);
         }
         if (dto.amount > targetInstallment.remainingAmount) {
-            throw new common_1.BadRequestException('القيمة المالية اكبر من القيمة المستحقة ');
+            throw new common_1.BadRequestException(`⚠️ المبلغ المدفوع أكبر من المبلغ المستحق (${targetInstallment.remainingAmount} جنيه).`);
         }
         targetInstallment.amountPaid += dto.amount;
         targetInstallment.remainingAmount -= dto.amount;
-        targetInstallment.paymentHistory.push({
+        student.paidAmount += dto.amount;
+        student.remainingBalance -= dto.amount;
+        student.paymentHistory.push({
             amount: dto.amount,
             paidAt: new Date(),
             cashReceiver: dto.cashReceiver,
             receiptNumber: dto.receiptNumber,
+            installmentNumber: dto.installmentNumber,
+            paymentType: dto.paymentType,
         });
-        student.paidAmount += dto.amount;
-        student.remainingBalance -= dto.amount;
         await this.installmentRepository.save(targetInstallment);
+        let message = `تم دفع ${dto.amount} جنيه بنجاح من القسط رقم ${dto.installmentNumber}.`;
         if (targetInstallment.remainingAmount <= 0) {
             if (targetInstallment.installmentNumber === 0) {
                 await this.installmentService.createMonthlyInstallments(student);
                 student.installmentStage = 1;
+                message =
+                    'تم سداد الدفعة المقدمة بالكامل! تم إنشاء الأقساط الشهرية بنجاح.';
+            }
+            else {
+                message = `تم سداد القسط رقم ${targetInstallment.installmentNumber} بالكامل. شكرًا على التزامك!`;
             }
         }
         await this.studentRepository.save(student);
-        return this.findOne(student.id);
+        return {
+            message,
+            student: await this.findOne(student.id),
+        };
     }
     async findAll() {
         const students = await this.studentRepository.find({
             relations: ['teachers', 'lessons', 'installments', 'branch', 'section'],
         });
-        return { students };
+        const studentsWithRecalculatedData = students.map(student => this.recalculateStudentFinancials(student));
+        return { students: studentsWithRecalculatedData };
     }
     async findOne(id) {
         const student = await this.studentRepository.findOne({
@@ -158,27 +228,27 @@ let StudentService = class StudentService {
         if (!student) {
             throw new common_1.NotFoundException('Student not found');
         }
-        return student;
+        return this.recalculateStudentFinancials(student);
     }
     async findByPhoneNumber(phoneNumber) {
         const student = await this.studentRepository.findOne({
             where: { phoneNumber },
-            relations: ['teachers', 'lessons', 'branch', 'section'],
+            relations: ['teachers', 'lessons', 'branch', 'section', 'installments'],
         });
         if (!student) {
             throw new common_1.NotFoundException('Student not found with this phone number');
         }
-        return student;
+        return this.recalculateStudentFinancials(student);
     }
     async findByManualEntryId(manualEntryId) {
         const student = await this.studentRepository.findOne({
             where: { manualEntryId },
-            relations: ['teachers', 'lessons', 'branch', 'section'],
+            relations: ['teachers', 'lessons', 'branch', 'section', 'installments'],
         });
         if (!student) {
             throw new common_1.NotFoundException('Student not found with this manual ID');
         }
-        return student;
+        return this.recalculateStudentFinancials(student);
     }
     async update(id, updateStudentDto) {
         const student = await this.findOne(id);

@@ -9,6 +9,9 @@ export class Section {
 
   @Column({ unique: true })
   name: string;
+  
+  @Column({ unique: true,nullable:true })
+  nameAr:string
 
   @Column({ type: 'float' })
   totalAmount: number;

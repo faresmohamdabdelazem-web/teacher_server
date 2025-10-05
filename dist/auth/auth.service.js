@@ -201,7 +201,7 @@ let AuthService = class AuthService {
             parentPhoneNumber: createStudentDto.parentPhoneNumber,
             sectionId: createStudentDto.sectionId,
             nationalId: createStudentDto.nationalId,
-            branchId: createStudentDto.branchId
+            branchId: createStudentDto.branchId,
         });
         return {
             message: 'Student created successfully by assistant',

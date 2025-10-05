@@ -118,6 +118,10 @@ __decorate([
     __metadata("design:type", String)
 ], Student.prototype, "receiptNumber", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'jsonb', default: [] }),
+    __metadata("design:type", Array)
+], Student.prototype, "paymentHistory", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], Student.prototype, "createdAt", void 0);

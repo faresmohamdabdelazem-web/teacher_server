@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Installment } from './entities/installment.entity';
@@ -25,26 +25,37 @@ export class InstallmentService {
     return this.installmentRepository.save(installment);
   }
 
-  async createMonthlyInstallments(student: Student): Promise<Installment[]> {
-    // --- تعديل مهم: تصحيح معادلة حساب المبلغ المتبقي للأقساط ---
-    const amountToBeInstalled = student.totalAmount - student.downPayment;
-    const monthlyAmount = amountToBeInstalled / 12;
-    // -------------------------------------------------------------
-
-    const installments: Installment[] = [];
-    for (let i = 1; i <= 12; i++) {
-      const installment = this.installmentRepository.create({
-        studentId: student.id,
-        installmentNumber: i,
-        installmentStage: i,
-        amount: monthlyAmount,
-        monthNumber: i, // سيتم استخدامه لحساب تاريخ الاستحقاق
-        cashReceiver: student.cashReceiver || 'Admin',
-      });
-      installments.push(installment);
-    }
-    return this.installmentRepository.save(installments);
+async createMonthlyInstallments(student: Student): Promise<Installment[]> {
+  if (!student.id) {
+    throw new BadRequestException('Student must be saved before creating installments');
   }
+
+  const amountToBeInstalled = student.totalAmount - student.downPayment;
+  const rawMonthlyAmount = amountToBeInstalled / 12;
+
+  const decimalPart = rawMonthlyAmount % 1;
+  const monthlyAmount = decimalPart < 0.4
+    ? Math.floor(rawMonthlyAmount)
+    : Math.ceil(rawMonthlyAmount);
+
+  const installments: Installment[] = [];
+
+  for (let i = 1; i <= 12; i++) {
+    const installment = this.installmentRepository.create({
+      studentId: student.id, // ✅ استخدم id فقط لتفادي مشاكل العلاقات
+      installmentNumber: i,
+      installmentStage: i,
+      amount: monthlyAmount,
+      monthNumber: i,
+      cashReceiver: student.cashReceiver || 'Admin',
+    });
+
+    installments.push(installment);
+  }
+
+  return this.installmentRepository.save(installments);
+}
+
 
   async findAll(): Promise<Installment[]> {
     return this.installmentRepository.find({ relations: ['student'] });
