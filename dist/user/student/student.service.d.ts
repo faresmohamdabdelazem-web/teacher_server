@@ -15,8 +15,12 @@ export declare class StudentService {
     private sectionRepository;
     private installmentService;
     constructor(studentRepository: Repository<Student>, installmentRepository: Repository<Installment>, branchRepository: Repository<Branch>, sectionRepository: Repository<Section>, installmentService: InstallmentService);
+    private recalculateStudentFinancials;
     create(createStudentDto: CreateStudentDto): Promise<Student>;
-    payInstallment(studentId: string, dto: PayInstallmentDto): Promise<Student>;
+    payInstallment(studentId: string, dto: PayInstallmentDto): Promise<{
+        message: string;
+        student: Student;
+    }>;
     findAll(): Promise<{
         students: Student[];
     }>;

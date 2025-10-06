@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
   BeforeInsert,
   BeforeUpdate,
+  AfterLoad,
 } from 'typeorm';
 import { Student } from 'src/user/student/student.entity';
 
@@ -56,14 +57,6 @@ export class Installment {
   })
   status: InstallmentStatus;
 
-  @Column({ type: 'jsonb', default: [] })
-  paymentHistory: {
-    amount: number;
-    paidAt: Date;
-    cashReceiver: string;
-    receiptNumber: string;
-  }[];
-
   @ManyToOne(() => Student, (student) => student.installments, {
     onDelete: 'CASCADE',
   })
@@ -99,14 +92,10 @@ export class Installment {
 
   setDueDate() {
     const now = new Date();
-    // قسط المقدم يستحق فوراً
     if (this.monthNumber <= 0) {
       this.dueDate = now;
     } else {
-      // --- تعديل مهم: تصحيح حساب تاريخ الاستحقاق ---
-      // يضيف عدد الشهور (monthNumber) إلى الشهر الحالي
       this.dueDate = new Date(now.getFullYear(), now.getMonth() + this.monthNumber, 5);
-      // ------------------------------------------
     }
   }
 }
