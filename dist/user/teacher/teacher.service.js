@@ -32,13 +32,26 @@ let TeacherService = class TeacherService {
         this.attendanceRepository = attendanceRepository;
     }
     async create(createTeacherDto, user) {
-        const teacher = this.teacherRepository.create({ id: user.userId, user });
+        const { firstName, lastName } = createTeacherDto;
+        const existingTeacher = await this.teacherRepository
+            .createQueryBuilder('teacher')
+            .where('LOWER(teacher.firstName) = LOWER(:firstName)', { firstName })
+            .andWhere('LOWER(teacher.lastName) = LOWER(:lastName)', { lastName })
+            .getOne();
+        if (existingTeacher) {
+            throw new common_1.BadRequestException('اسم المعلم بالكامل موجود من فضلك غير الاسم الاول او السم الثاني');
+        }
+        const teacher = this.teacherRepository.create({
+            id: user.userId,
+            user,
+            ...createTeacherDto,
+        });
         return await this.teacherRepository.save(teacher);
     }
     async findAll() {
         const teachers = await this.userRepository.find({
             where: { role: user_role_enum_1.UserRole.TEACHER },
-            relations: ['lessons', 'students'],
+            relations: ['teacher', 'teacher.lessons'],
         });
         return { teachers };
     }

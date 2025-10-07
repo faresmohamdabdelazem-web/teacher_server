@@ -1,5 +1,6 @@
 import { Branch } from 'src/branch/entities/branch.entity';
-import { Student } from 'src/user/student/student.entity'; // --- إضافة جديدة ---
+import { Student } from 'src/user/student/student.entity';
+import { Lesson } from 'src/lesson/entities/lesson.entity'; // ← أضف هذا
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, OneToMany } from 'typeorm';
 
 @Entity('sections')
@@ -10,8 +11,8 @@ export class Section {
   @Column({ unique: true })
   name: string;
   
-  @Column({ unique: true,nullable:true })
-  nameAr:string
+  @Column({  nullable: true })
+  nameAr: string;
 
   @Column({ type: 'float' })
   totalAmount: number;
@@ -22,8 +23,11 @@ export class Section {
   @ManyToMany(() => Branch, (branch) => branch.sections)
   branches: Branch[];
 
-  // --- بداية الإضافة: علاقة مع الطلاب ---
+  // علاقة مع الطلاب
   @OneToMany(() => Student, (student) => student.section)
   students: Student[];
-  // --- نهاية الإضافة ---
+
+  // علاقة مع المحاضرات
+  @OneToMany(() => Lesson, (lesson) => lesson.section)
+  lessons: Lesson[];
 }

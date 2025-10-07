@@ -48,6 +48,7 @@ async createMonthlyInstallments(student: Student): Promise<Installment[]> {
       amount: monthlyAmount,
       monthNumber: i,
       cashReceiver: student.cashReceiver || 'Admin',
+      throughPerson:student.throughPerson || 'User'
     });
 
     installments.push(installment);

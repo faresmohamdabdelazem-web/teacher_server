@@ -34,10 +34,20 @@ let UserService = class UserService {
     }
     async create(createUserDto) {
         const transformedDto = (0, class_transformer_1.plainToClass)(create_user_dto_1.CreateUserDto, createUserDto);
+        const existingUser = await this.userRepository.findOne({
+            where: {
+                firstName: transformedDto.firstName,
+                lastName: transformedDto.lastName,
+            },
+        });
+        if (existingUser) {
+            throw new common_1.ConflictException('اسم المعلم بالكامل موجود من فضلك غير الاسم الاول او الاسم الثاني');
+        }
         const user = this.userRepository.create(transformedDto);
         const savedUser = await this.userRepository.save(user).catch((error) => {
-            if (error.detail.includes(user.email) && error.code == '23505')
-                throw new common_1.ConflictException(`Email '${user.email}' is already exists`);
+            if (error.detail?.includes(user.email) && error.code === '23505') {
+                throw new common_1.ConflictException(`Email '${user.email}' already exists`);
+            }
             throw new common_1.InternalServerErrorException();
         });
         if (savedUser.role === user_role_enum_1.UserRole.TEACHER) {

@@ -1,5 +1,7 @@
 import { Teacher } from '../../user/teacher/teacher.entity';
 import { Student } from '../../user/student/student.entity';
+import { Section } from 'src/section/entities/section.entity';
+import { Branch } from 'src/branch/entities/branch.entity';
 export declare enum LessonRecurrenceType {
     NONE = "none",
     DAILY = "daily",
@@ -36,6 +38,9 @@ export declare class Lesson {
     teacherId: string;
     teacher: Teacher;
     students: Student[];
+    sectionId: string;
+    section: Section;
+    branch: Branch;
     price: number;
     pricingType: PricingType;
     grade?: string;

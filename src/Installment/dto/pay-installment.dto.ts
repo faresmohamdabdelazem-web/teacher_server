@@ -27,4 +27,10 @@ export class PayInstallmentDto {
   @IsNotEmpty()
   @IsEnum(PaymentType)
   paymentType: PaymentType;
+
+
+
+  @IsOptional()
+  @IsString()
+  throughPerson:string
 }

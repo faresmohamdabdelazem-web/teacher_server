@@ -40,6 +40,7 @@ export declare class Student {
         receiptNumber: string;
         installmentNumber: number;
         paymentType: PaymentType;
+        throughPerson: string;
     }[];
     isLate?: boolean;
     createdAt: Date;

@@ -29,7 +29,7 @@ import { TeacherService } from './teacher/teacher.service';
 import { AssistantService } from './assistant/assistant.service';
 
 @Controller('user')
-@UseGuards(AuthGuard, RoleGuard)
+// @UseGuards(AuthGuard, RoleGuard)
 export class UserController {
   constructor(
     private readonly userService: UserService,
@@ -39,7 +39,7 @@ export class UserController {
   ) { }
 
   @Post()
-  @Roles(UserRole.ADMIN)
+
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }

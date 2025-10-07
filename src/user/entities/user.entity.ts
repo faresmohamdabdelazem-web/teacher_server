@@ -12,6 +12,7 @@ import {
 import { ulid } from 'ulid';
 import { Exclude, Expose } from 'class-transformer';
 import { UserRole } from '../user.role.enum';
+import { Teacher } from '../teacher/teacher.entity';
 
 @Entity()
 export class User {
@@ -57,7 +58,9 @@ export class User {
   @UpdateDateColumn()
   @Exclude()
   updatedAt: Date;
-
+// ✅ أضف العلاقة دي:
+  @OneToOne(() => Teacher, (teacher) => teacher.user)
+  teacher: Teacher;
   @Column('enum', {
     enum: UserRole,
     default: UserRole.CUSTOMER,

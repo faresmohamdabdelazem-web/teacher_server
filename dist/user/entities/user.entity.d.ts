@@ -1,4 +1,5 @@
 import { UserRole } from '../user.role.enum';
+import { Teacher } from '../teacher/teacher.entity';
 export declare class User {
     userId: string;
     email: string;
@@ -11,5 +12,6 @@ export declare class User {
     dateOfBirth?: Date;
     createdAt: Date;
     updatedAt: Date;
+    teacher: Teacher;
     role: UserRole;
 }

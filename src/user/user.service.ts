@@ -39,30 +39,43 @@ export class UserService {
     private assistantService: AssistantService,
   ) { }
 
-  async create(createUserDto: CreateUserDto) {
+async create(createUserDto: CreateUserDto) {
+  const transformedDto = plainToClass(CreateUserDto, createUserDto);
 
+  // ✅ تحقق من عدم تكرار الاسم الأول والأخير معًا
+  const existingUser = await this.userRepository.findOne({
+    where: {
+      firstName: transformedDto.firstName,
+      lastName: transformedDto.lastName,
+    },
+  });
 
-
-    const transformedDto = plainToClass(CreateUserDto, createUserDto);
-    const user = this.userRepository.create(transformedDto);
-    const savedUser = await this.userRepository.save(user).catch((error) => {
-
-      if (error.detail.includes(user.email) && error.code == '23505')
-        throw new ConflictException(`Email '${user.email}' is already exists`);
-      throw new InternalServerErrorException();
-    });
-
-
-
-    // Create Teacher or Assistant entity if applicable
-    if (savedUser.role === UserRole.TEACHER) {
-      await this.teacherService.createWithUser(savedUser);
-    } else if (savedUser.role === UserRole.ASSISTANT) {
-      await this.assistantService.createWithUser(savedUser);
-    }
-
-    return savedUser;
+  if (existingUser) {
+    throw new ConflictException(
+      'اسم المعلم بالكامل موجود من فضلك غير الاسم الاول او الاسم الثاني',
+    );
   }
+
+  // إنشاء المستخدم
+  const user = this.userRepository.create(transformedDto);
+
+  const savedUser = await this.userRepository.save(user).catch((error) => {
+    if (error.detail?.includes(user.email) && error.code === '23505') {
+      throw new ConflictException(`Email '${user.email}' already exists`);
+    }
+    throw new InternalServerErrorException();
+  });
+
+  // إنشاء Teacher أو Assistant لو الدور ينطبق
+  if (savedUser.role === UserRole.TEACHER) {
+    await this.teacherService.createWithUser(savedUser);
+  } else if (savedUser.role === UserRole.ASSISTANT) {
+    await this.assistantService.createWithUser(savedUser);
+  }
+
+  return savedUser;
+}
+
 
  
   private base64ToBuffer(base64String: string): Buffer {

@@ -38,6 +38,10 @@ export class Installment {
   @Column({ nullable: true })
   numberOfInstallment: string;
 
+
+  @Column({ nullable: true })
+  throughPerson: string
+
   @Column('float')
   amount: number;
 

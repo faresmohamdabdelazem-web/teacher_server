@@ -36,8 +36,10 @@ let LessonService = class LessonService {
         this.whatsAppService = whatsAppService;
     }
     async create(createLessonDto, userId, userRole) {
-        if (userRole !== user_role_enum_1.UserRole.TEACHER && userRole !== user_role_enum_1.UserRole.ASSISTANT) {
-            throw new common_1.ForbiddenException('Only teachers and assistants can create lessons');
+        if (userRole !== user_role_enum_1.UserRole.TEACHER &&
+            userRole !== user_role_enum_1.UserRole.ASSISTANT &&
+            userRole !== user_role_enum_1.UserRole.ADMIN) {
+            throw new common_1.ForbiddenException('Only teachers, assistants, or admins can create lessons');
         }
         let teacher;
         if (userRole === user_role_enum_1.UserRole.TEACHER) {
@@ -49,44 +51,43 @@ let LessonService = class LessonService {
                 throw new common_1.ForbiddenException('Teachers can only create lessons for themselves');
             }
             teacher = await this.teacherRepository.findOne({ where: { id: user.userId } });
-            if (!teacher) {
+            if (!teacher)
                 throw new common_1.NotFoundException('Teacher entity not found');
-            }
         }
         else if (userRole === user_role_enum_1.UserRole.ASSISTANT) {
             const user = await this.userService.findOneById(userId);
             if (!user || user.role !== user_role_enum_1.UserRole.ASSISTANT) {
                 throw new common_1.NotFoundException('Assistant not found');
             }
-            teacher = await this.teacherRepository.findOne({ where: { id: createLessonDto.teacherId } });
-            if (!teacher) {
+            teacher = await this.teacherRepository.findOne({
+                where: { id: createLessonDto.teacherId },
+            });
+            if (!teacher)
                 throw new common_1.NotFoundException('Teacher not found');
+        }
+        else if (userRole === user_role_enum_1.UserRole.ADMIN) {
+            if (!createLessonDto.teacherId) {
+                throw new common_1.BadRequestException('teacherId is required when admin creates a lesson');
             }
+            teacher = await this.teacherRepository.findOne({
+                where: { id: createLessonDto.teacherId },
+            });
+            if (!teacher)
+                throw new common_1.NotFoundException('Teacher not found for this ID');
         }
         if (createLessonDto.startTime) {
             const startTime = new Date(createLessonDto.startTime);
-            const attendanceStartTime = new Date(startTime.getTime() - 60 * 60 * 1000);
-            createLessonDto['attendanceStartTime'] = attendanceStartTime;
+            createLessonDto['attendanceStartTime'] = new Date(startTime.getTime() - 60 * 60 * 1000);
         }
         if (createLessonDto.scheduledDate) {
             const scheduledDate = new Date(createLessonDto.scheduledDate);
-            console.log('Lesson creation - Original input:', {
-                originalInput: createLessonDto.scheduledDate,
-                parsedDate: scheduledDate.toISOString(),
-                localDate: scheduledDate.toString(),
-                hours: scheduledDate.getHours(),
-                minutes: scheduledDate.getMinutes()
-            });
             createLessonDto.scheduledDate = scheduledDate.toISOString();
-            console.log('Lesson creation - Final scheduledDate:', {
-                finalScheduledDate: createLessonDto.scheduledDate
-            });
         }
         const lesson = this.lessonRepository.create({
             ...createLessonDto,
             teacherId: teacher.id,
             price: createLessonDto.price,
-            status: lesson_entity_1.LessonStatus.SCHEDULED
+            status: lesson_entity_1.LessonStatus.SCHEDULED,
         });
         const savedLesson = await this.lessonRepository.save(lesson);
         const lessonWithTeacher = await this.lessonRepository.findOne({
@@ -94,9 +95,7 @@ let LessonService = class LessonService {
             relations: ['teacher'],
         });
         await this.teacherStatsService.onLessonCreated(lessonWithTeacher);
-        return {
-            lesson: lessonWithTeacher,
-        };
+        return { lesson: lessonWithTeacher, teacher };
     }
     async checkAndUpdateExpiredLessons(lessons) {
         const now = new Date();
@@ -130,7 +129,7 @@ let LessonService = class LessonService {
     }
     async findAll() {
         const lessons = await this.lessonRepository.find({
-            relations: ['teacher', 'students'],
+            relations: ['teacher', 'students', 'section', 'section.branches'],
         });
         await this.checkAndUpdateExpiredLessons(lessons);
         const lessonsWithAttendance = await Promise.all(lessons.map(async (lesson) => {
@@ -140,14 +139,35 @@ let LessonService = class LessonService {
             const attendance = await this.attendanceRepository.find({
                 where: {
                     lessonId: lesson.id,
-                    createdAt: (0, typeorm_2.Between)(startOfDay, endOfDay)
+                    createdAt: (0, typeorm_2.Between)(startOfDay, endOfDay),
                 },
                 relations: ['student'],
-                order: { createdAt: 'ASC' }
+                order: { createdAt: 'ASC' },
             });
             return {
-                ...lesson,
-                attendanceHistory: attendance
+                id: lesson.id,
+                title: lesson.title,
+                description: lesson.description,
+                subject: lesson.subject,
+                scheduledDate: lesson.scheduledDate,
+                startTime: lesson.startTime,
+                endTime: lesson.endTime,
+                room: lesson.room,
+                recurrenceType: lesson.recurrenceType,
+                status: lesson.status,
+                teacherId: lesson.teacherId,
+                sectionId: lesson.sectionId,
+                sectionName: lesson.section?.name ?? null,
+                sectionNameAr: lesson.section?.nameAr ?? null,
+                branchNames: lesson.section?.branches?.map((b) => b.name) ?? [],
+                branchNamesAr: lesson.section?.branches?.map((b) => b.nameAr) ?? [],
+                price: lesson.price,
+                pricingType: lesson.pricingType,
+                grade: lesson.grade,
+                students: lesson.students,
+                attendanceHistory: attendance,
+                createdAt: lesson.createdAt,
+                updatedAt: lesson.updatedAt,
             };
         }));
         return { lessons: lessonsWithAttendance };

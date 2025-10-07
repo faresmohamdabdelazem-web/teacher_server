@@ -122,6 +122,7 @@ let StudentService = class StudentService {
                 receiptNumber: `DP-${Date.now()}`,
                 installmentNumber: 0,
                 paymentType: pay_installment_dto_1.PaymentType.DOWN_PAYMENT,
+                throughPerson: savedStudent.throughPerson || "user"
             });
             await this.studentRepository.save(savedStudent);
         }
@@ -193,6 +194,7 @@ let StudentService = class StudentService {
             receiptNumber: dto.receiptNumber,
             installmentNumber: dto.installmentNumber,
             paymentType: dto.paymentType,
+            throughPerson: dto.throughPerson
         });
         await this.installmentRepository.save(targetInstallment);
         let message = `تم دفع ${dto.amount} جنيه بنجاح من القسط رقم ${dto.installmentNumber}.`;

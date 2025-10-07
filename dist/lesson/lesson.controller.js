@@ -149,7 +149,7 @@ exports.LessonController = LessonController;
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
-    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT, user_role_enum_1.UserRole.ADMIN),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, get_signed_user_decorator_1.GetSignedUser)()),
     __metadata("design:type", Function),
