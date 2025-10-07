@@ -24,12 +24,10 @@ export declare class LessonService {
     create(createLessonDto: CreateLessonDto, userId: string, userRole: string): Promise<{
         lesson: Lesson;
         teacher: Teacher;
-    } | {
-        lesson: Lesson;
     }>;
     private checkAndUpdateExpiredLessons;
     findAll(): Promise<{
-        lessons: Lesson[];
+        lessons: any[];
     }>;
     findOne(id: string): Promise<{
         lesson: Lesson;

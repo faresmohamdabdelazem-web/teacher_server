@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, Or } from 'typeorm';
 import { Teacher } from './teacher.entity';
 import { Student } from '../student/student.entity';
 import { CreateTeacherDto } from './create-teacher.dto';
@@ -26,16 +26,38 @@ export class TeacherService {
     private attendanceRepository: Repository<LessonAttendance>,
   ) { }
 
-  async create(createTeacherDto: CreateTeacherDto, user: User): Promise<Teacher> {
-    // Create a Teacher entity linked to the User
-    const teacher = this.teacherRepository.create({ id: user.userId, user });
-    return await this.teacherRepository.save(teacher);
+async create(createTeacherDto: CreateTeacherDto, user: User): Promise<Teacher> {
+  const { firstName, lastName } = createTeacherDto;
+
+  // Check if a teacher already exists with the same first and last name
+ const existingTeacher = await this.teacherRepository
+  .createQueryBuilder('teacher')
+  .where('LOWER(teacher.firstName) = LOWER(:firstName)', { firstName })
+  .andWhere('LOWER(teacher.lastName) = LOWER(:lastName)', { lastName })
+  .getOne();
+
+
+  if (existingTeacher) {
+    throw new BadRequestException(
+      'اسم المعلم بالكامل موجود من فضلك غير الاسم الاول او السم الثاني',
+    );
   }
+
+  // Create new teacher
+  const teacher = this.teacherRepository.create({
+    id: user.userId,
+    user,
+    ...createTeacherDto,
+  });
+
+  return await this.teacherRepository.save(teacher);
+}
+
 
   async findAll(): Promise<{ teachers: User[] }> {
     const teachers = await this.userRepository.find({
       where: { role: UserRole.TEACHER },
-      relations: ['lessons', 'students'],
+      relations: ['teacher', 'teacher.lessons'],
     });
     return { teachers };
   }

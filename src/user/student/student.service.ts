@@ -149,6 +149,7 @@ export class StudentService {
       receiptNumber: `DP-${Date.now()}`,
       installmentNumber: 0,
       paymentType: PaymentType.DOWN_PAYMENT,
+      throughPerson:savedStudent.throughPerson || "user"
     });
 
     await this.studentRepository.save(savedStudent);
@@ -260,6 +261,7 @@ async payInstallment(
     receiptNumber: dto.receiptNumber,
     installmentNumber: dto.installmentNumber,
     paymentType: dto.paymentType,
+    throughPerson:dto.throughPerson
   });
 
   // ✅ حفظ القسط

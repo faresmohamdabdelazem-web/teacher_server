@@ -13,11 +13,9 @@ export declare class LessonController {
     create(createLessonDto: CreateLessonDto, user: any): Promise<{
         lesson: import("./entities/lesson.entity").Lesson;
         teacher: import("../user/teacher/teacher.entity").Teacher;
-    } | {
-        lesson: import("./entities/lesson.entity").Lesson;
     }>;
     findAll(): Promise<{
-        lessons: import("./entities/lesson.entity").Lesson[];
+        lessons: any[];
     }>;
     findBySubject(subject: string): Promise<{
         lessons: import("./entities/lesson.entity").Lesson[];

@@ -13,6 +13,8 @@ exports.Lesson = exports.PricingType = exports.LessonStatus = exports.LessonRecu
 const typeorm_1 = require("typeorm");
 const teacher_entity_1 = require("../../user/teacher/teacher.entity");
 const student_entity_1 = require("../../user/student/student.entity");
+const section_entity_1 = require("../../section/entities/section.entity");
+const branch_entity_1 = require("../../branch/entities/branch.entity");
 var LessonRecurrenceType;
 (function (LessonRecurrenceType) {
     LessonRecurrenceType["NONE"] = "none";
@@ -77,7 +79,7 @@ __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
         enum: LessonRecurrenceType,
-        default: LessonRecurrenceType.NONE
+        default: LessonRecurrenceType.NONE,
     }),
     __metadata("design:type", String)
 ], Lesson.prototype, "recurrenceType", void 0);
@@ -89,7 +91,7 @@ __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
         enum: LessonStatus,
-        default: LessonStatus.SCHEDULED
+        default: LessonStatus.SCHEDULED,
     }),
     __metadata("design:type", String)
 ], Lesson.prototype, "status", void 0);
@@ -102,7 +104,7 @@ __decorate([
     __metadata("design:type", Date)
 ], Lesson.prototype, "updatedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], Lesson.prototype, "teacherId", void 0);
 __decorate([
@@ -119,6 +121,20 @@ __decorate([
     __metadata("design:type", Array)
 ], Lesson.prototype, "students", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Lesson.prototype, "sectionId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => section_entity_1.Section, (section) => section.lessons, {
+        onDelete: 'SET NULL',
+    }),
+    __metadata("design:type", section_entity_1.Section)
+], Lesson.prototype, "section", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => branch_entity_1.Branch, (branch) => branch.sections),
+    __metadata("design:type", branch_entity_1.Branch)
+], Lesson.prototype, "branch", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], Lesson.prototype, "price", void 0);
@@ -126,7 +142,7 @@ __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
         enum: PricingType,
-        default: PricingType.PER_LESSON
+        default: PricingType.PER_LESSON,
     }),
     __metadata("design:type", String)
 ], Lesson.prototype, "pricingType", void 0);

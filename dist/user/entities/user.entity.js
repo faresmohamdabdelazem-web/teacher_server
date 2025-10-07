@@ -13,6 +13,7 @@ exports.User = void 0;
 const typeorm_1 = require("typeorm");
 const class_transformer_1 = require("class-transformer");
 const user_role_enum_1 = require("../user.role.enum");
+const teacher_entity_1 = require("../teacher/teacher.entity");
 let User = class User {
 };
 exports.User = User;
@@ -65,6 +66,10 @@ __decorate([
     (0, class_transformer_1.Exclude)(),
     __metadata("design:type", Date)
 ], User.prototype, "updatedAt", void 0);
+__decorate([
+    (0, typeorm_1.OneToOne)(() => teacher_entity_1.Teacher, (teacher) => teacher.user),
+    __metadata("design:type", teacher_entity_1.Teacher)
+], User.prototype, "teacher", void 0);
 __decorate([
     (0, typeorm_1.Column)('enum', {
         enum: user_role_enum_1.UserRole,

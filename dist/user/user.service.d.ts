@@ -48,6 +48,7 @@ export declare class UserService {
             dateOfBirth?: Date;
             createdAt: Date;
             updatedAt: Date;
+            teacher: import("./teacher/teacher.entity").Teacher;
             role: UserRole;
         };
     }>;

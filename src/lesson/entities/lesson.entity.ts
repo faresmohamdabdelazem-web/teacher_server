@@ -10,7 +10,8 @@ import {
 } from 'typeorm';
 import { Teacher } from '../../user/teacher/teacher.entity';
 import { Student } from '../../user/student/student.entity';
-// import { Assistant } from '../../user/assistant/assistant.entity';
+import { Section } from 'src/section/entities/section.entity'; // ← أضف هذا
+import { Branch } from 'src/branch/entities/branch.entity';
 
 export enum LessonRecurrenceType {
   NONE = 'none',
@@ -51,31 +52,31 @@ export class Lesson {
   scheduledDate: Date;
 
   @Column({ nullable: true })
-  startTime: Date; // Actual lesson start time
+  startTime: Date;
 
   @Column({ nullable: true })
-  endTime: Date; // Actual lesson end time
+  endTime: Date;
 
   @Column({ nullable: true })
-  attendanceStartTime: Date; // When attendance can be taken (1 hour before start)
+  attendanceStartTime: Date;
 
   @Column({ nullable: true })
   room: string;
 
-  @Column({ 
-    type: 'enum', 
-    enum: LessonRecurrenceType, 
-    default: LessonRecurrenceType.NONE 
+  @Column({
+    type: 'enum',
+    enum: LessonRecurrenceType,
+    default: LessonRecurrenceType.NONE,
   })
   recurrenceType: LessonRecurrenceType;
 
   @Column({ type: 'json', nullable: true })
-  recurrencePattern: any; // e.g., { dayOfWeek: 3 } for Wednesday
+  recurrencePattern: any;
 
-  @Column({ 
-    type: 'enum', 
-    enum: LessonStatus, 
-    default: LessonStatus.SCHEDULED 
+  @Column({
+    type: 'enum',
+    enum: LessonStatus,
+    default: LessonStatus.SCHEDULED,
   })
   status: LessonStatus;
 
@@ -85,14 +86,14 @@ export class Lesson {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // Relationship with Teacher
-  @Column()
+  // علاقة مع المعلم
+  @Column({nullable:true})
   teacherId: string;
 
   @ManyToOne(() => Teacher, (teacher) => teacher.lessons)
   teacher: Teacher;
 
-  // Relationship with Students
+  // علاقة مع الطلاب
   @ManyToMany(() => Student, (student) => student.lessons)
   @JoinTable({
     name: 'lesson_students',
@@ -101,18 +102,30 @@ export class Lesson {
   })
   students: Student[];
 
-  // Removed assistants relation
+  // علاقة جديدة مع القسم
+  @Column({ nullable: true })
+  sectionId: string;
+
+  @ManyToOne(() => Section, (section) => section.lessons, {
+    onDelete: 'SET NULL',
+  })
+  section: Section;
+
+@ManyToOne(() => Branch, (branch) => branch.sections)
+branch: Branch;
+
+
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   price: number;
 
-  @Column({ 
-    type: 'enum', 
-    enum: PricingType, 
-    default: PricingType.PER_LESSON 
+  @Column({
+    type: 'enum',
+    enum: PricingType,
+    default: PricingType.PER_LESSON,
   })
   pricingType: PricingType;
 
   @Column({ nullable: true })
   grade?: string;
-} 
+}

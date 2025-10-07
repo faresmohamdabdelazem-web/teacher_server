@@ -33,7 +33,7 @@ export class LessonController {
 
   @Post()
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.TEACHER, UserRole.ASSISTANT)
+  @Roles(UserRole.TEACHER, UserRole.ASSISTANT,UserRole.ADMIN)
   create(
     @Body() createLessonDto: CreateLessonDto,
     @GetSignedUser() user: any,
