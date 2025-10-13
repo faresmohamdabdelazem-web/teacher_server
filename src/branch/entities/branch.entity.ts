@@ -10,6 +10,9 @@ import {
 } from 'typeorm';
 import { Student } from 'src/user/student/student.entity';
 import { Section } from 'src/section/entities/section.entity';
+import { Revenue } from 'src/revenues/entities/revenues.entity';
+import { Lesson } from 'src/lesson/entities/lesson.entity';
+import { Assistant } from 'src/user/assistant/assistant.entity'; // ✅ تأكد من المسار الصحيح
 
 @Entity('branches')
 export class Branch {
@@ -17,10 +20,10 @@ export class Branch {
   id: string;
 
   @Column({ unique: true })
-  name: string
+  name: string;
 
   @Column({ unique: true, nullable: true })
-  nameAr: string
+  nameAr: string;
 
   @Column({ nullable: true })
   address: string;
@@ -31,13 +34,18 @@ export class Branch {
   @OneToMany(() => Student, (student) => student.branch)
   students: Student[];
 
+  @OneToMany(() => Revenue, (revenue) => revenue.branch)
+  revenues: Revenue[];
+
+  // ✅ العلاقة الجديدة مع المساعدين
+  @OneToMany(() => Assistant, (assistant) => assistant.branch)
+  assistants: Assistant[];
+
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
-
-
 
   @ManyToMany(() => Section, (section) => section.branches)
   @JoinTable({
@@ -46,4 +54,7 @@ export class Branch {
     inverseJoinColumn: { name: 'sectionId', referencedColumnName: 'id' },
   })
   sections: Section[];
+
+   @OneToMany(() => Lesson, (lesson) => lesson.branch)
+  lessons: Lesson[];
 }

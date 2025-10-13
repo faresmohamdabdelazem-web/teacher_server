@@ -44,8 +44,13 @@ export class LessonController {
   @Get()
   @UseGuards(AuthGuard)
   @Roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.ASSISTANT)
-  findAll() {
-    return this.lessonService.findAll();
+  findAll(
+    @Query("date") scheduledDate:string,
+    @Query("sectionId") sectionId:string,
+    @Query("branchId") branchId:string,
+   
+  ) {
+    return this.lessonService.findAll(scheduledDate,sectionId,branchId);
   }
 
   @Get('subject/:subject')
@@ -104,7 +109,7 @@ export class LessonController {
   // New attendance endpoints
   @Post(':id/start-attendance')
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.TEACHER, UserRole.ASSISTANT)
+  @Roles(UserRole.TEACHER, UserRole.ASSISTANT,UserRole.ADMIN)
   startAttendance(
     @Param('id') lessonId: string,
     @GetSignedUser() user: any,
@@ -114,7 +119,7 @@ export class LessonController {
 
   @Post('mark-attendance')
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.TEACHER, UserRole.ASSISTANT)
+  @Roles(UserRole.TEACHER, UserRole.ASSISTANT,UserRole.ADMIN)
   markAttendance(
     @Body() markAttendanceDto: MarkAttendanceDto,
     @GetSignedUser() user: any,
@@ -141,7 +146,7 @@ export class LessonController {
 
   @Post(':id/start-lesson')
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.TEACHER, UserRole.ASSISTANT)
+  @Roles(UserRole.TEACHER, UserRole.ASSISTANT,UserRole.ADMIN)
   startLesson(
     @Param('id') lessonId: string,
     @GetSignedUser() user: any,
@@ -151,7 +156,7 @@ export class LessonController {
 
   @Post(':id/complete-lesson')
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.TEACHER, UserRole.ASSISTANT)
+  @Roles(UserRole.TEACHER, UserRole.ASSISTANT,UserRole.ADMIN)
   completeLesson(
     @Param('id') lessonId: string,
     @GetSignedUser() user: any,

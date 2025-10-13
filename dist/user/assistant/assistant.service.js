@@ -21,11 +21,11 @@ let AssistantService = class AssistantService {
     constructor(assistantRepository) {
         this.assistantRepository = assistantRepository;
     }
-    async createWithUser(user, teacherId) {
+    async createWithUser(user, branchId) {
         const assistant = this.assistantRepository.create({
             userId: user.userId,
             user,
-            teacherId: teacherId || null
+            branchId: branchId || null,
         });
         return await this.assistantRepository.save(assistant);
     }
@@ -46,7 +46,7 @@ let AssistantService = class AssistantService {
     async findByUserId(userId) {
         return await this.assistantRepository.findOne({
             where: { userId },
-            relations: ['user', 'teacher'],
+            relations: ['user', 'branch'],
         });
     }
 };

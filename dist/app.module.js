@@ -25,6 +25,7 @@ const admin_controller_1 = require("./admin/admin.controller");
 const installment_module_1 = require("./Installment/installment.module");
 const branch_module_1 = require("./branch/branch.module");
 const section_module_1 = require("./section/section.module");
+const revenue_module_1 = require("./revenues/revenue.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -57,6 +58,7 @@ exports.AppModule = AppModule = __decorate([
             user_module_1.UserModule,
             installment_module_1.InstallmentModule,
             branch_module_1.BranchModule,
+            revenue_module_1.RevenueModule,
             cloudinary_module_1.CloudinaryModule,
             mail_module_1.MailModule,
             mailer_1.MailerModule.forRoot({

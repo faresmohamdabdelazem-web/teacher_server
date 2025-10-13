@@ -26,6 +26,11 @@ __decorate([
     __metadata("design:type", String)
 ], CreateLessonDto.prototype, "description", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateLessonDto.prototype, "teachername", void 0);
+__decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
@@ -61,7 +66,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateLessonDto.prototype, "room", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], CreateLessonDto.prototype, "teacherId", void 0);

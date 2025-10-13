@@ -13,6 +13,20 @@ exports.CreateStudentDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const isBase64OrURL_decorator_1 = require("../../decorators/isBase64OrURL.decorator");
+class ActivityDto {
+}
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ActivityDto.prototype, "title", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ActivityDto.prototype, "subTitle", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Date),
+    __metadata("design:type", Date)
+], ActivityDto.prototype, "createdAt", void 0);
 class CreateStudentDto {
 }
 exports.CreateStudentDto = CreateStudentDto;
@@ -114,4 +128,11 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateStudentDto.prototype, "receiptNumber", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => ActivityDto),
+    __metadata("design:type", Array)
+], CreateStudentDto.prototype, "activities", void 0);
 //# sourceMappingURL=create-student.dto.js.map

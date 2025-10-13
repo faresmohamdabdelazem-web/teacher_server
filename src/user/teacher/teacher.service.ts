@@ -238,7 +238,7 @@ async create(createTeacherDto: CreateTeacherDto, user: User): Promise<Teacher> {
     if (!teacher) throw new NotFoundException('Teacher not found');
 
     const student = await this.studentRepository.findOne({ where: { id: studentId } });
-    if (!student) throw new NotFoundException('Student not found');
+    if (!student) throw new NotFoundException('هذا الطالب غير موجود');
 
     // Avoid duplicates
     if (!teacher.students.some(s => s.id === studentId)) {

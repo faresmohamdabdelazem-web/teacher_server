@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
   ParseUUIDPipe,
 } from '@nestjs/common';
@@ -39,10 +40,22 @@ export class StudentController {
     return this.studentService.payInstallment(id, payInstallmentDto);
   }
 
-  @Get()
-  findAll() {
+ @Get()
+findAll(
+  @Query('branchId') branchId?: string,
+  @Query('sectionId') sectionId?: string,
+  @Query('isLate') isLate?: string,
+) {
+  return this.studentService.findAll(branchId, sectionId, isLate);
+}
+  
+
+ @Get("name")
+  findAllName() {
     return this.studentService.findAll();
   }
+
+
 
   @Get(':id')
   findOne(@Param('id') id: string) {

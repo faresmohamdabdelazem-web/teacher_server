@@ -33,7 +33,10 @@ let StudentController = class StudentController {
     payInstallment(id, payInstallmentDto) {
         return this.studentService.payInstallment(id, payInstallmentDto);
     }
-    findAll() {
+    findAll(branchId, sectionId, isLate) {
+        return this.studentService.findAll(branchId, sectionId, isLate);
+    }
+    findAllName() {
         return this.studentService.findAll();
     }
     findOne(id) {
@@ -82,10 +85,19 @@ __decorate([
 ], StudentController.prototype, "payInstallment", null);
 __decorate([
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)('branchId')),
+    __param(1, (0, common_1.Query)('sectionId')),
+    __param(2, (0, common_1.Query)('isLate')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], StudentController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)("name"),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
-], StudentController.prototype, "findAll", null);
+], StudentController.prototype, "findAllName", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

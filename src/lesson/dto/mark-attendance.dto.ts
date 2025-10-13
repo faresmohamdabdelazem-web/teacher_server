@@ -4,11 +4,11 @@ import { IsULID } from '../../decorators/is.ulid.decorator';
 
 export class MarkAttendanceDto {
   @IsNotEmpty()
-  @IsUUID()
+  @IsString()
   lessonId: string;
 
   @IsNotEmpty()
-  @IsULID()
+  @IsString()
   studentId: string;
 
   @IsNotEmpty()

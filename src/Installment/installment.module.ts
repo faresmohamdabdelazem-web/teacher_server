@@ -9,6 +9,6 @@ import { InstallmentController } from './installment.controller';
   imports: [TypeOrmModule.forFeature([Installment, Student])],
   providers: [InstallmentService],
   controllers: [InstallmentController],
-  exports: [InstallmentService], // مهم جداً
+  exports: [InstallmentService], 
 })
 export class InstallmentModule {}

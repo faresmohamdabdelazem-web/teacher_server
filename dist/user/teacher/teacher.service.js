@@ -181,7 +181,7 @@ let TeacherService = class TeacherService {
             throw new common_1.NotFoundException('Teacher not found');
         const student = await this.studentRepository.findOne({ where: { id: studentId } });
         if (!student)
-            throw new common_1.NotFoundException('Student not found');
+            throw new common_1.NotFoundException('هذا الطالب غير موجود');
         if (!teacher.students.some(s => s.id === studentId)) {
             teacher.students.push(student);
             await this.teacherRepository.save(teacher);

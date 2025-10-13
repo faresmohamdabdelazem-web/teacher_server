@@ -7,11 +7,13 @@ import {
   ManyToOne,
   ManyToMany,
   JoinTable,
+  OneToMany, // 🔹 تأكد من استيراد OneToMany
 } from 'typeorm';
 import { Teacher } from '../../user/teacher/teacher.entity';
 import { Student } from '../../user/student/student.entity';
-import { Section } from 'src/section/entities/section.entity'; // ← أضف هذا
+import { Section } from 'src/section/entities/section.entity';
 import { Branch } from 'src/branch/entities/branch.entity';
+import { LessonAttendance } from './lesson-attendance.entity'; // 🔹 استيراد كيان الحضور
 
 export enum LessonRecurrenceType {
   NONE = 'none',
@@ -62,6 +64,8 @@ export class Lesson {
 
   @Column({ nullable: true })
   room: string;
+  @Column({ nullable: true })
+  teachername: string;
 
   @Column({
     type: 'enum',
@@ -86,14 +90,12 @@ export class Lesson {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // علاقة مع المعلم
-  @Column({nullable:true})
+  @Column({ nullable: true })
   teacherId: string;
 
   @ManyToOne(() => Teacher, (teacher) => teacher.lessons)
   teacher: Teacher;
 
-  // علاقة مع الطلاب
   @ManyToMany(() => Student, (student) => student.lessons)
   @JoinTable({
     name: 'lesson_students',
@@ -102,7 +104,6 @@ export class Lesson {
   })
   students: Student[];
 
-  // علاقة جديدة مع القسم
   @Column({ nullable: true })
   sectionId: string;
 
@@ -111,10 +112,12 @@ export class Lesson {
   })
   section: Section;
 
-@ManyToOne(() => Branch, (branch) => branch.sections)
-branch: Branch;
-
-
+  @ManyToOne(() => Branch, (branch) => branch.lessons)
+  branch: Branch;
+  
+  // ✅👇 هذا هو الجزء الذي تمت إضافته وتصحيحه
+  @OneToMany(() => LessonAttendance, (attendance) => attendance.lesson)
+  attendances: LessonAttendance[];
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   price: number;
@@ -128,4 +131,7 @@ branch: Branch;
 
   @Column({ nullable: true })
   grade?: string;
+
+  nameAr: any;
+  branches: any;
 }

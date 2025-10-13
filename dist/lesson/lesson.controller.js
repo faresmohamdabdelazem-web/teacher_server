@@ -35,8 +35,8 @@ let LessonController = class LessonController {
     create(createLessonDto, user) {
         return this.lessonService.create(createLessonDto, user.id, user.role);
     }
-    findAll() {
-        return this.lessonService.findAll();
+    findAll(scheduledDate, sectionId, branchId) {
+        return this.lessonService.findAll(scheduledDate, sectionId, branchId);
     }
     findBySubject(subject) {
         return this.lessonService.findBySubject(subject);
@@ -160,8 +160,11 @@ __decorate([
     (0, common_1.Get)(),
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
     (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.ADMIN, user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT),
+    __param(0, (0, common_1.Query)("date")),
+    __param(1, (0, common_1.Query)("sectionId")),
+    __param(2, (0, common_1.Query)("branchId")),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", void 0)
 ], LessonController.prototype, "findAll", null);
 __decorate([
@@ -224,7 +227,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)(':id/start-attendance'),
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
-    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT, user_role_enum_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, get_signed_user_decorator_1.GetSignedUser)()),
     __metadata("design:type", Function),
@@ -234,7 +237,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)('mark-attendance'),
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
-    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT, user_role_enum_1.UserRole.ADMIN),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, get_signed_user_decorator_1.GetSignedUser)()),
     __metadata("design:type", Function),
@@ -263,7 +266,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)(':id/start-lesson'),
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
-    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT, user_role_enum_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, get_signed_user_decorator_1.GetSignedUser)()),
     __metadata("design:type", Function),
@@ -273,7 +276,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)(':id/complete-lesson'),
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
-    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER, user_role_enum_1.UserRole.ASSISTANT, user_role_enum_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, get_signed_user_decorator_1.GetSignedUser)()),
     __metadata("design:type", Function),

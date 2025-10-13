@@ -111,40 +111,43 @@ export class TeacherController {
   }
 
   // Teacher endpoint to create assistants
-  @Post('create-assistant')
-  @Roles(UserRole.TEACHER)
-  async createAssistant(
-    @Body() createAssistantData: CreateUserDto,
-    @GetSignedUser() user: UserPayload,
-  ) {
-    // Verify that the user is a teacher
-    const currentUser = await this.userService.findOneById(user.id);
-    if (!currentUser || currentUser.role !== UserRole.TEACHER) {
-      throw new Error('Only teachers can create assistants');
-    }
-
-    const assistant = await this.userService.create({
-      ...createAssistantData,
-      role: UserRole.ASSISTANT,
-    });
-
-    // Create assistant entity and assign to the teacher
-    const assistantEntity = await this.assistantService.createWithUserAndTeacher(assistant, currentUser.userId);
-
-    return {
-      message: 'Assistant created successfully by teacher',
-      assistant: {
-        id: assistant.userId,
-        firstName: assistant.firstName,
-        lastName: assistant.lastName,
-        email: assistant.email,
-        role: assistant.role,
-        phone: assistant.phone,
-        createdAt: assistant.createdAt,
-        teacherId: assistantEntity.teacherId,
-      },
-    };
+@Post('create-assistant')
+@Roles(UserRole.ADMIN)
+async createAssistant(
+  @Body() createAssistantData: CreateUserDto & { branchId?: string }, // ✅ استقبل branchId
+  @GetSignedUser() user: UserPayload,
+) {
+  const currentUser = await this.userService.findOneById(user.id);
+  if (!currentUser || currentUser.role !== UserRole.ADMIN) {
+    throw new Error('Only Admin can create assistants');
   }
+
+  const assistant = await this.userService.create({
+    ...createAssistantData,
+    role: UserRole.ASSISTANT,
+  });
+
+  // ✅ مرّر branchId الحقيقي من الـ body
+  const assistantEntity = await this.assistantService.createWithUser(
+    assistant,
+    createAssistantData.branchId,
+  );
+
+  return {
+    message: 'Assistant created successfully by Admin',
+    assistant: {
+      id: assistant.userId,
+      firstName: assistant.firstName,
+      lastName: assistant.lastName,
+      email: assistant.email,
+      role: assistant.role,
+      phone: assistant.phone,
+      createdAt: assistant.createdAt,
+      branchId: assistantEntity.branchId,
+    },
+  };
+}
+
 
  
   @Post('create-student')

@@ -9,8 +9,10 @@ import {
   BeforeInsert,
   BeforeUpdate,
   AfterLoad,
+  OneToMany,
 } from 'typeorm';
 import { Student } from 'src/user/student/student.entity';
+import { Revenue } from 'src/revenues/entities/revenues.entity';
 
 export enum InstallmentStatus {
   UNPAID = 'UNPAID',
@@ -67,6 +69,9 @@ export class Installment {
   @JoinColumn({ name: 'studentId' })
   student: Student;
 
+
+  @OneToMany(() => Revenue, (revenue) => revenue.installment)
+  revenues: Revenue[];
   @Column()
   studentId: string;
 

@@ -12,6 +12,7 @@ import { Student } from '../user/student/student.entity';
 import { UserService } from '../user/user.service';
 import { TeacherStatsService } from './teacher-stats.service';
 import { WhatsAppService } from '../notification/whatsapp.service';
+import { StudentService } from '../user/student/student.service';
 export declare class LessonService {
     private lessonRepository;
     private attendanceRepository;
@@ -20,13 +21,13 @@ export declare class LessonService {
     private readonly userService;
     readonly teacherStatsService: TeacherStatsService;
     private readonly whatsAppService;
-    constructor(lessonRepository: Repository<Lesson>, attendanceRepository: Repository<LessonAttendance>, teacherRepository: Repository<Teacher>, studentRepository: Repository<Student>, userService: UserService, teacherStatsService: TeacherStatsService, whatsAppService: WhatsAppService);
+    private studentservice;
+    constructor(lessonRepository: Repository<Lesson>, attendanceRepository: Repository<LessonAttendance>, teacherRepository: Repository<Teacher>, studentRepository: Repository<Student>, userService: UserService, teacherStatsService: TeacherStatsService, whatsAppService: WhatsAppService, studentservice: StudentService);
     create(createLessonDto: CreateLessonDto, userId: string, userRole: string): Promise<{
         lesson: Lesson;
-        teacher: Teacher;
     }>;
     private checkAndUpdateExpiredLessons;
-    findAll(): Promise<{
+    findAll(scheduledDate?: string, sectionId?: string, branchId?: string): Promise<{
         lessons: any[];
     }>;
     findOne(id: string): Promise<{
@@ -79,12 +80,6 @@ export declare class LessonService {
         attendance: LessonAttendance;
     }>;
     getLessonAttendance(lessonId: string, date?: string): Promise<{
-        attendance: LessonAttendance[];
-    }>;
-    getLessonAttendanceHistory(lessonId: string, startDate: string, endDate: string): Promise<{
-        attendance: LessonAttendance[];
-    }>;
-    getLessonAttendanceForDate(lessonId: string, date: string): Promise<{
         attendance: LessonAttendance[];
     }>;
     getStudentAttendanceHistory(studentId: string): Promise<{

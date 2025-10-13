@@ -15,6 +15,7 @@ const teacher_entity_1 = require("../../user/teacher/teacher.entity");
 const student_entity_1 = require("../../user/student/student.entity");
 const section_entity_1 = require("../../section/entities/section.entity");
 const branch_entity_1 = require("../../branch/entities/branch.entity");
+const lesson_attendance_entity_1 = require("./lesson-attendance.entity");
 var LessonRecurrenceType;
 (function (LessonRecurrenceType) {
     LessonRecurrenceType["NONE"] = "none";
@@ -76,6 +77,10 @@ __decorate([
     __metadata("design:type", String)
 ], Lesson.prototype, "room", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Lesson.prototype, "teachername", void 0);
+__decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
         enum: LessonRecurrenceType,
@@ -131,9 +136,13 @@ __decorate([
     __metadata("design:type", section_entity_1.Section)
 ], Lesson.prototype, "section", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => branch_entity_1.Branch, (branch) => branch.sections),
+    (0, typeorm_1.ManyToOne)(() => branch_entity_1.Branch, (branch) => branch.lessons),
     __metadata("design:type", branch_entity_1.Branch)
 ], Lesson.prototype, "branch", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => lesson_attendance_entity_1.LessonAttendance, (attendance) => attendance.lesson),
+    __metadata("design:type", Array)
+], Lesson.prototype, "attendances", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, nullable: true }),
     __metadata("design:type", Number)

@@ -20,11 +20,15 @@ import { AuthModule } from 'src/auth/auth.module';
 import { NotificationModule } from 'src/notification/notification.module';
 import { WhatsAppService } from 'src/notification/whatsapp.service';
 import { InstallmentModule } from 'src/Installment/installment.module';
-import { Installment } from 'src/Installment/entities/installment.entity'; // <-- الخطوة 1: استيراد الكيان
+import { Installment } from 'src/Installment/entities/installment.entity';
 import { Branch } from 'src/branch/entities/branch.entity';
 import { SectionModule } from 'src/section/section.module';
 import { Section } from 'src/section/entities/section.entity';
 import { BranchModule } from 'src/branch/branch.module';
+import { RevenueModule } from 'src/revenues/revenue.module';
+
+// ✅ استيراد LessonModule
+import { LessonModule } from 'src/lesson/lesson.module';
 
 @Module({
   imports: [
@@ -37,13 +41,18 @@ import { BranchModule } from 'src/branch/branch.module';
       Section,
       Lesson,
       LessonAttendance,
-      Installment, // <-- الخطوة 2: أضف Installment هنا
+      Installment,
     ]),
     CloudinaryModule,
     InstallmentModule,
     NotificationModule,
+    RevenueModule,
     SectionModule,
     BranchModule,
+
+    // ✅ إضافة LessonModule مع forwardRef لتجنب الـ circular dependency
+    forwardRef(() => LessonModule),
+
     forwardRef(() => AuthModule),
   ],
   controllers: [

@@ -14,6 +14,10 @@ export class CreateLessonDto {
   @IsString()
   description?: string;
 
+  @IsOptional()
+  @IsString()
+  teachername?: string;
+
   @IsNotEmpty()
   @IsString()
   subject: string;
@@ -42,7 +46,7 @@ export class CreateLessonDto {
   @IsString()
   room?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsUUID()
   teacherId: string;
 

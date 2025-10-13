@@ -15,7 +15,8 @@ import { Installment } from 'src/Installment/entities/installment.entity';
 import { Branch } from 'src/branch/entities/branch.entity';
 import { Section } from 'src/section/entities/section.entity';
 import { PaymentType } from 'src/Installment/dto/pay-installment.dto';
-
+import { Revenue } from 'src/revenues/entities/revenues.entity';
+import { LessonAttendance } from '../../lesson/entities/lesson-attendance.entity';
 @Entity('students')
 export class Student {
   @PrimaryColumn({ type: 'varchar', length: 20 })
@@ -79,7 +80,7 @@ export class Student {
   @JoinColumn({ name: 'branchId' })
   branch: Branch;
 
-  @ManyToOne(() => Section, (section) => section.students, { eager: true })
+  @ManyToOne(() => Section, (section) => section.students)
   @JoinColumn({ name: 'sectionId' })
   section: Section;
 
@@ -116,9 +117,16 @@ export class Student {
 
   @ManyToMany(() => Lesson, (lesson) => lesson.students)
   lessons: Lesson[];
-
+@OneToMany(() => Revenue, (revenue) => revenue.student)
+revenues: Revenue[];
   @OneToMany(() => Installment, (installment) => installment.student, {
     cascade: true,
   })
   installments: Installment[];
+   @Column({ type: 'jsonb', array: false, default: [] })
+  activities: { title: string; subTitle: string; createdAt?: Date }[];
+
+
+   @OneToMany(() => LessonAttendance, (attendance) => attendance.student)
+  attendances: LessonAttendance[];
 }

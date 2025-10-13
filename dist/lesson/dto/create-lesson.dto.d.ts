@@ -5,6 +5,7 @@ interface RecurrencePattern {
 export declare class CreateLessonDto {
     title: string;
     description?: string;
+    teachername?: string;
     subject: string;
     duration?: number;
     isActive?: boolean;
