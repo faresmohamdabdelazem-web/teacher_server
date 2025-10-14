@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { Student } from 'src/user/student/student.entity';
 import { Section } from 'src/section/entities/section.entity';
-import { Installment } from 'src/installment/entities/installment.entity';
+import { Installment } from 'src/Installment/entities/installment.entity';
 import { Branch } from 'src/branch/entities/branch.entity';
 
 export enum RevenueSource {
