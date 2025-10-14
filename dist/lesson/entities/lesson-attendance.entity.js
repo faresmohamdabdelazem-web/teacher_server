@@ -39,7 +39,7 @@ __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
         enum: AttendanceStatus,
-        default: AttendanceStatus.ABSENT
+        default: AttendanceStatus.ABSENT,
     }),
     __metadata("design:type", String)
 ], LessonAttendance.prototype, "status", void 0);
@@ -64,12 +64,12 @@ __decorate([
     __metadata("design:type", Date)
 ], LessonAttendance.prototype, "updatedAt", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => lesson_entity_1.Lesson, (lesson) => lesson.id),
+    (0, typeorm_1.ManyToOne)(() => lesson_entity_1.Lesson, (lesson) => lesson.attendances),
     (0, typeorm_1.JoinColumn)({ name: 'lessonId' }),
     __metadata("design:type", lesson_entity_1.Lesson)
 ], LessonAttendance.prototype, "lesson", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => student_entity_1.Student, (student) => student.id),
+    (0, typeorm_1.ManyToOne)(() => student_entity_1.Student, (student) => student.attendances),
     (0, typeorm_1.JoinColumn)({ name: 'studentId' }),
     __metadata("design:type", student_entity_1.Student)
 ], LessonAttendance.prototype, "student", void 0);

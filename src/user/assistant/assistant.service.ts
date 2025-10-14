@@ -11,14 +11,14 @@ export class AssistantService {
     private assistantRepository: Repository<Assistant>,
   ) {}
 
-  async createWithUser(user: User, teacherId?: string) {
-    const assistant = this.assistantRepository.create({ 
-      userId: user.userId, 
-      user,
-      teacherId: teacherId || null
-    });
-    return await this.assistantRepository.save(assistant);
-  }
+ async createWithUser(user: User, branchId?: string) {
+  const assistant = this.assistantRepository.create({
+    userId: user.userId,
+    user,
+    branchId: branchId || null,
+  });
+  return await this.assistantRepository.save(assistant);
+}
 
   async createWithUserAndTeacher(user: User, teacherId: string) {
     const assistant = this.assistantRepository.create({ 
@@ -39,7 +39,7 @@ export class AssistantService {
   async findByUserId(userId: string): Promise<Assistant | null> {
     return await this.assistantRepository.findOne({
       where: { userId },
-      relations: ['user', 'teacher'],
+      relations: ['user', 'branch'],
     });
   }
 } 

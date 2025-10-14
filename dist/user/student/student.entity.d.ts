@@ -4,6 +4,8 @@ import { Installment } from 'src/Installment/entities/installment.entity';
 import { Branch } from 'src/branch/entities/branch.entity';
 import { Section } from 'src/section/entities/section.entity';
 import { PaymentType } from 'src/Installment/dto/pay-installment.dto';
+import { Revenue } from 'src/revenues/entities/revenues.entity';
+import { LessonAttendance } from '../../lesson/entities/lesson-attendance.entity';
 export declare class Student {
     id: string;
     firstName: string;
@@ -29,6 +31,7 @@ export declare class Student {
     remainingBalance: number;
     throughPerson?: string;
     branch: Branch;
+    branchId: string;
     section: Section;
     sectionId: string;
     cashReceiver?: string;
@@ -47,5 +50,12 @@ export declare class Student {
     updatedAt: Date;
     teachers: Teacher[];
     lessons: Lesson[];
+    revenues: Revenue[];
     installments: Installment[];
+    activities: {
+        title: string;
+        subTitle: string;
+        createdAt?: Date;
+    }[];
+    attendances: LessonAttendance[];
 }

@@ -34,6 +34,8 @@ const branch_entity_1 = require("../branch/entities/branch.entity");
 const section_module_1 = require("../section/section.module");
 const section_entity_1 = require("../section/entities/section.entity");
 const branch_module_1 = require("../branch/branch.module");
+const revenue_module_1 = require("../revenues/revenue.module");
+const lesson_module_1 = require("../lesson/lesson.module");
 let UserModule = class UserModule {
 };
 exports.UserModule = UserModule;
@@ -54,8 +56,10 @@ exports.UserModule = UserModule = __decorate([
             cloudinary_module_1.CloudinaryModule,
             installment_module_1.InstallmentModule,
             notification_module_1.NotificationModule,
+            revenue_module_1.RevenueModule,
             section_module_1.SectionModule,
             branch_module_1.BranchModule,
+            (0, common_1.forwardRef)(() => lesson_module_1.LessonModule),
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
         ],
         controllers: [

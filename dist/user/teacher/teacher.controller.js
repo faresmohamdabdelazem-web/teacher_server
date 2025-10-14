@@ -22,7 +22,6 @@ const user_role_enum_1 = require("../user.role.enum");
 const role_decorator_1 = require("../../decorators/role.decorator");
 const user_service_1 = require("../user.service");
 const get_signed_user_decorator_1 = require("../../decorators/get.signed.user.decorator");
-const create_user_dto_1 = require("../dto/create-user.dto");
 const assistant_service_1 = require("../assistant/assistant.service");
 const lesson_entity_1 = require("../../lesson/entities/lesson.entity");
 const student_service_1 = require("../student/student.service");
@@ -76,16 +75,16 @@ let TeacherController = class TeacherController {
     }
     async createAssistant(createAssistantData, user) {
         const currentUser = await this.userService.findOneById(user.id);
-        if (!currentUser || currentUser.role !== user_role_enum_1.UserRole.TEACHER) {
-            throw new Error('Only teachers can create assistants');
+        if (!currentUser || currentUser.role !== user_role_enum_1.UserRole.ADMIN) {
+            throw new Error('Only Admin can create assistants');
         }
         const assistant = await this.userService.create({
             ...createAssistantData,
             role: user_role_enum_1.UserRole.ASSISTANT,
         });
-        const assistantEntity = await this.assistantService.createWithUserAndTeacher(assistant, currentUser.userId);
+        const assistantEntity = await this.assistantService.createWithUser(assistant, createAssistantData.branchId);
         return {
-            message: 'Assistant created successfully by teacher',
+            message: 'Assistant created successfully by Admin',
             assistant: {
                 id: assistant.userId,
                 firstName: assistant.firstName,
@@ -94,7 +93,7 @@ let TeacherController = class TeacherController {
                 role: assistant.role,
                 phone: assistant.phone,
                 createdAt: assistant.createdAt,
-                teacherId: assistantEntity.teacherId,
+                branchId: assistantEntity.branchId,
             },
         };
     }
@@ -103,7 +102,7 @@ let TeacherController = class TeacherController {
         if (!currentUser || currentUser.role !== user_role_enum_1.UserRole.TEACHER) {
             throw new Error('Only teachers can create students');
         }
-        const student = await this.studentService.create(createStudentDto);
+        const student = await this.studentService.create(createStudentDto, user);
         await this.teacherService.addStudentToTeacher(currentUser.userId, student.id);
         return {
             message: 'Student created successfully by teacher',
@@ -184,11 +183,11 @@ __decorate([
 ], TeacherController.prototype, "remove", null);
 __decorate([
     (0, common_1.Post)('create-assistant'),
-    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.TEACHER),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.ADMIN),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, get_signed_user_decorator_1.GetSignedUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_user_dto_1.CreateUserDto, Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], TeacherController.prototype, "createAssistant", null);
 __decorate([

@@ -42,7 +42,7 @@ async createMonthlyInstallments(student: Student): Promise<Installment[]> {
 
   for (let i = 1; i <= 12; i++) {
     const installment = this.installmentRepository.create({
-      studentId: student.id, // ✅ استخدم id فقط لتفادي مشاكل العلاقات
+      studentId: student.id, 
       installmentNumber: i,
       installmentStage: i,
       amount: monthlyAmount,
@@ -65,7 +65,7 @@ async createMonthlyInstallments(student: Student): Promise<Installment[]> {
   async findByStudent(studentId: string): Promise<Installment[]> {
     const student = await this.studentRepository.findOneBy({ id: studentId });
     if (!student) {
-      throw new NotFoundException('Student not found');
+      throw new NotFoundException('هذا الطالب غير موجود');
     }
     return this.installmentRepository.find({
       where: { studentId },

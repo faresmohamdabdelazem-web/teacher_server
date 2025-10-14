@@ -6,13 +6,20 @@ export declare class StudentController {
     private readonly studentService;
     private readonly whatsAppService;
     constructor(studentService: StudentService, whatsAppService: WhatsAppService);
-    create(createStudentDto: CreateStudentDto): Promise<import("./student.entity").Student>;
+    create(createStudentDto: CreateStudentDto, user: any): Promise<import("./student.entity").Student>;
     payInstallment(id: string, payInstallmentDto: PayInstallmentDto): Promise<{
         message: string;
         student: import("./student.entity").Student;
     }>;
-    findAll(): Promise<{
+    findAll(user: any, branchId?: string, sectionId?: string, isLate?: string): Promise<{
         students: import("./student.entity").Student[];
+    }>;
+    findAllName(user: any): Promise<{
+        students: {
+            id: string;
+            firstName: string;
+            lastName: string;
+        }[];
     }>;
     findOne(id: string): Promise<import("./student.entity").Student>;
     findByPhoneNumber(phoneNumber: string): Promise<import("./student.entity").Student>;

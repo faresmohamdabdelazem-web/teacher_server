@@ -21,20 +21,24 @@ const auth_guard_1 = require("../../auth/guard/auth.guard");
 const role_guard_1 = require("../../auth/guard/role.guard");
 const role_decorator_1 = require("../../decorators/role.decorator");
 const user_role_enum_1 = require("../user.role.enum");
+const get_signed_user_decorator_1 = require("../../decorators/get.signed.user.decorator");
 const pay_installment_dto_1 = require("../../Installment/dto/pay-installment.dto");
 let StudentController = class StudentController {
     constructor(studentService, whatsAppService) {
         this.studentService = studentService;
         this.whatsAppService = whatsAppService;
     }
-    create(createStudentDto) {
-        return this.studentService.create(createStudentDto);
+    create(createStudentDto, user) {
+        return this.studentService.create(createStudentDto, user);
     }
     payInstallment(id, payInstallmentDto) {
         return this.studentService.payInstallment(id, payInstallmentDto);
     }
-    findAll() {
-        return this.studentService.findAll();
+    findAll(user, branchId, sectionId, isLate) {
+        return this.studentService.findAll(branchId, sectionId, isLate, user);
+    }
+    findAllName(user) {
+        return this.studentService.findAllName(user);
     }
     findOne(id) {
         return this.studentService.findOne(id);
@@ -67,9 +71,12 @@ let StudentController = class StudentController {
 exports.StudentController = StudentController;
 __decorate([
     (0, common_1.Post)(),
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.ADMIN, user_role_enum_1.UserRole.ASSISTANT),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, get_signed_user_decorator_1.GetSignedUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_student_dto_1.CreateStudentDto]),
+    __metadata("design:paramtypes", [create_student_dto_1.CreateStudentDto, Object]),
     __metadata("design:returntype", void 0)
 ], StudentController.prototype, "create", null);
 __decorate([
@@ -82,10 +89,25 @@ __decorate([
 ], StudentController.prototype, "payInstallment", null);
 __decorate([
     (0, common_1.Get)(),
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.ADMIN, user_role_enum_1.UserRole.ASSISTANT),
+    __param(0, (0, get_signed_user_decorator_1.GetSignedUser)()),
+    __param(1, (0, common_1.Query)('branchId')),
+    __param(2, (0, common_1.Query)('sectionId')),
+    __param(3, (0, common_1.Query)('isLate')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", void 0)
 ], StudentController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('name'),
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard, role_guard_1.RoleGuard),
+    (0, role_decorator_1.Roles)(user_role_enum_1.UserRole.ADMIN, user_role_enum_1.UserRole.ASSISTANT),
+    __param(0, (0, get_signed_user_decorator_1.GetSignedUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], StudentController.prototype, "findAllName", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

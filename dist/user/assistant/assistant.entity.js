@@ -13,6 +13,7 @@ exports.Assistant = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../entities/user.entity");
 const teacher_entity_1 = require("../teacher/teacher.entity");
+const branch_entity_1 = require("../../branch/entities/branch.entity");
 let Assistant = class Assistant {
 };
 exports.Assistant = Assistant;
@@ -34,6 +35,15 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'teacherId' }),
     __metadata("design:type", teacher_entity_1.Teacher)
 ], Assistant.prototype, "teacher", void 0);
+__decorate([
+    (0, typeorm_1.Column)('uuid', { nullable: true }),
+    __metadata("design:type", String)
+], Assistant.prototype, "branchId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => branch_entity_1.Branch, (branch) => branch.assistants, { nullable: true, onDelete: 'SET NULL' }),
+    (0, typeorm_1.JoinColumn)({ name: 'branchId' }),
+    __metadata("design:type", branch_entity_1.Branch)
+], Assistant.prototype, "branch", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

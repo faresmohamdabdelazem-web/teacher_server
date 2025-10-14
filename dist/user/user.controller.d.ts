@@ -40,6 +40,8 @@ export declare class UserController {
             updatedAt: Date;
             teacher: import("./teacher/teacher.entity").Teacher;
             role: UserRole;
+            branch: import("../branch/entities/branch.entity").Branch;
+            branchId: string;
         };
     }>;
     update(id: string, user: UserPayload, updateUserDto: UpdateUserDto): Promise<{

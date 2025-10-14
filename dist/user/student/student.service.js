@@ -18,41 +18,69 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const student_entity_1 = require("./student.entity");
 const installment_service_1 = require("../../Installment/installment.service");
+const lesson_attendance_entity_1 = require("../../lesson/entities/lesson-attendance.entity");
 const pay_installment_dto_1 = require("../../Installment/dto/pay-installment.dto");
 const installment_entity_1 = require("../../Installment/entities/installment.entity");
 const branch_entity_1 = require("../../branch/entities/branch.entity");
 const section_entity_1 = require("../../section/entities/section.entity");
+const revenue_service_1 = require("../../revenues/revenue.service");
+const revenues_entity_1 = require("../../revenues/entities/revenues.entity");
+const user_role_enum_1 = require("../user.role.enum");
+const assistant_entity_1 = require("../assistant/assistant.entity");
 let StudentService = class StudentService {
-    constructor(studentRepository, installmentRepository, branchRepository, sectionRepository, installmentService) {
+    constructor(studentRepository, installmentRepository, branchRepository, sectionRepository, attendanceRepository, assistantRepository, installmentService, revenueService) {
         this.studentRepository = studentRepository;
         this.installmentRepository = installmentRepository;
         this.branchRepository = branchRepository;
         this.sectionRepository = sectionRepository;
+        this.attendanceRepository = attendanceRepository;
+        this.assistantRepository = assistantRepository;
         this.installmentService = installmentService;
+        this.revenueService = revenueService;
     }
     recalculateStudentFinancials(student) {
-        if (!student.installments) {
-            return student;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        student.isLate = false;
+        if (student.installments && student.installments.length > 0) {
+            for (const installment of student.installments) {
+                if (installment.dueDate) {
+                    const dueDate = new Date(installment.dueDate);
+                    dueDate.setHours(0, 0, 0, 0);
+                    if (dueDate < today && installment.remainingAmount > 0) {
+                        student.isLate = true;
+                        break;
+                    }
+                }
+            }
         }
-        const downPaymentInstallment = student.installments.find(inst => inst.installmentNumber === 0);
-        student.remainingDownPayment = downPaymentInstallment
-            ? downPaymentInstallment.remainingAmount
-            : 0;
-        student.remainingBalance = student.totalAmount - student.paidAmount;
-        const currentDate = new Date();
-        const requiredInstallment = student.installments.find(inst => {
-            return inst.dueDate < currentDate && inst.status !== installment_entity_1.InstallmentStatus.PAID;
-        });
-        student.isLate = !!requiredInstallment;
         return student;
     }
-    async create(createStudentDto) {
-        const { branchId, sectionId, phoneNumber } = createStudentDto;
+    async create(createStudentDto, user) {
+        const { branchId, sectionId, phoneNumber, firstName, lastName } = createStudentDto;
+        if (user.role === user_role_enum_1.UserRole.ASSISTANT) {
+            const assistant = await this.assistantRepository.findOne({
+                where: { user: { userId: user.id } },
+                relations: ['branch'],
+            });
+            if (!assistant) {
+                throw new common_1.ForbiddenException('Assistant not found');
+            }
+            if (assistant.branch.id !== branchId) {
+                throw new common_1.ForbiddenException('الطلب ليس من نفس فرع المساعد');
+            }
+        }
         if (phoneNumber) {
             const existingStudentByPhone = await this.studentRepository.findOneBy({ phoneNumber });
             if (existingStudentByPhone) {
                 throw new common_1.ConflictException('Student with this phone number already exists');
             }
+        }
+        const existingStudentByName = await this.studentRepository.findOne({
+            where: { firstName, lastName },
+        });
+        if (existingStudentByName) {
+            throw new common_1.ConflictException(`A student with the name "${firstName} ${lastName}" already exists`);
         }
         const branch = await this.branchRepository.findOne({
             where: { id: branchId },
@@ -65,7 +93,7 @@ let StudentService = class StudentService {
         if (!section) {
             throw new common_1.BadRequestException(`Section with ID "${sectionId}" not found`);
         }
-        const isSectionInBranch = branch.sections.some(s => s.id === section.id);
+        const isSectionInBranch = branch.sections.some((s) => s.id === section.id);
         if (!isSectionInBranch) {
             throw new common_1.BadRequestException(`Section "${section.name}" is not available in branch "${branch.name}"`);
         }
@@ -109,20 +137,38 @@ let StudentService = class StudentService {
             remainingBalance: totalAmount - paidAmount,
             installmentStage: 0,
             paymentHistory: [],
+            activities: [],
         };
         delete studentData.branchId;
         delete studentData.sectionId;
         const student = this.studentRepository.create(studentData);
+        student.activities.push({
+            title: 'تم إنشاء حساب الطالب',
+            subTitle: `تم تسجيل الطالب ${student.firstName} ${student.lastName} بنجاح.`,
+            createdAt: new Date(),
+        });
         const savedStudent = await this.studentRepository.save(student);
         if (paidDownPayment > 0) {
             savedStudent.paymentHistory.push({
                 amount: paidDownPayment,
                 paidAt: new Date(),
-                cashReceiver: savedStudent.cashReceiver || 'Admin',
+                cashReceiver: savedStudent.cashReceiver || user.name || 'Admin',
                 receiptNumber: `DP-${Date.now()}`,
                 installmentNumber: 0,
                 paymentType: pay_installment_dto_1.PaymentType.DOWN_PAYMENT,
-                throughPerson: savedStudent.throughPerson || "user"
+                throughPerson: savedStudent.throughPerson || user.name || 'user',
+            });
+            savedStudent.activities.push({
+                title: 'تم دفع دفعة مقدمة',
+                subTitle: `تم استلام مبلغ ${paidDownPayment} جنيه كدفعة مقدمة.`,
+                createdAt: new Date(),
+            });
+            await this.revenueService.create({
+                amount: paidDownPayment,
+                source: revenues_entity_1.RevenueSource.DOWN_PAYMENT,
+                studentId: savedStudent.id,
+                sectionId: savedStudent.section.id,
+                branchId: savedStudent.branch.id,
             });
             await this.studentRepository.save(savedStudent);
         }
@@ -139,10 +185,10 @@ let StudentService = class StudentService {
     async payInstallment(studentId, dto) {
         const student = await this.studentRepository.findOne({
             where: { id: studentId },
-            relations: ['installments'],
+            relations: ['installments', 'section', 'branch'],
         });
         if (!student) {
-            throw new common_1.NotFoundException('Student not found');
+            throw new common_1.NotFoundException('هذا الطالب غير موجود');
         }
         const nextDueInstallment = student.installments.find((inst) => inst.remainingAmount > 0);
         if (!nextDueInstallment && dto.paymentType === pay_installment_dto_1.PaymentType.DOWN_PAYMENT) {
@@ -169,7 +215,7 @@ let StudentService = class StudentService {
         const nextMonthIndex = (nextDueInstallment.installmentNumber - 1) % 12;
         const nextMonthName = months[nextMonthIndex];
         if (dto.installmentNumber !== nextDueInstallment.installmentNumber) {
-            throw new common_1.BadRequestException(`لا يمكنك دفع هذا القسط الآن. القسط المستحق الحالي هو ر (${nextMonthName}) بمبلغ ${nextDueInstallment.remainingAmount} جنيه.`);
+            throw new common_1.BadRequestException(`لا يمكنك دفع هذا القسط الآن. القسط المستحق الحالي هو شهر (${nextMonthName}) بمبلغ ${nextDueInstallment.remainingAmount} جنيه.`);
         }
         const targetInstallment = nextDueInstallment;
         if (targetInstallment.status === installment_entity_1.InstallmentStatus.PAID) {
@@ -183,6 +229,9 @@ let StudentService = class StudentService {
         if (dto.amount > targetInstallment.remainingAmount) {
             throw new common_1.BadRequestException(`⚠️ المبلغ المدفوع أكبر من المبلغ المستحق (${targetInstallment.remainingAmount} جنيه).`);
         }
+        if (!student.section || !student.branch) {
+            throw new common_1.BadRequestException(`Data integrity error: Student with ID "${studentId}" does not have a section or branch assigned. Cannot process payment.`);
+        }
         targetInstallment.amountPaid += dto.amount;
         targetInstallment.remainingAmount -= dto.amount;
         student.paidAmount += dto.amount;
@@ -194,7 +243,28 @@ let StudentService = class StudentService {
             receiptNumber: dto.receiptNumber,
             installmentNumber: dto.installmentNumber,
             paymentType: dto.paymentType,
-            throughPerson: dto.throughPerson
+            throughPerson: dto.throughPerson,
+        });
+        const activityTitle = targetInstallment.installmentNumber === 0
+            ? 'تم دفع جزء من الدفعة المقدمة'
+            : 'تم دفع قسط';
+        const activitySubTitle = targetInstallment.installmentNumber === 0
+            ? `تم دفع مبلغ ${dto.amount} جنيه.`
+            : `تم دفع مبلغ ${dto.amount} جنيه للقسط رقم ${dto.installmentNumber}.`;
+        student.activities.push({
+            title: activityTitle,
+            subTitle: activitySubTitle,
+            createdAt: new Date(),
+        });
+        await this.revenueService.create({
+            amount: dto.amount,
+            source: targetInstallment.installmentNumber === 0
+                ? revenues_entity_1.RevenueSource.DOWN_PAYMENT
+                : revenues_entity_1.RevenueSource.INSTALLMENT,
+            studentId: student.id,
+            sectionId: student.section.id,
+            installmentId: targetInstallment.id,
+            branchId: student.branch.id,
         });
         await this.installmentRepository.save(targetInstallment);
         let message = `تم دفع ${dto.amount} جنيه بنجاح من القسط رقم ${dto.installmentNumber}.`;
@@ -204,9 +274,19 @@ let StudentService = class StudentService {
                 student.installmentStage = 1;
                 message =
                     'تم سداد الدفعة المقدمة بالكامل! تم إنشاء الأقساط الشهرية بنجاح.';
+                student.activities.push({
+                    title: 'تم إنشاء الأقساط الشهرية',
+                    subTitle: 'تم سداد الدفعة المقدمة بالكامل وبدء الأقساط الشهرية.',
+                    createdAt: new Date(),
+                });
             }
             else {
                 message = `تم سداد القسط رقم ${targetInstallment.installmentNumber} بالكامل. شكرًا على التزامك!`;
+                student.activities.push({
+                    title: 'تم سداد قسط بالكامل',
+                    subTitle: `تم سداد القسط رقم ${targetInstallment.installmentNumber} بالكامل.`,
+                    createdAt: new Date(),
+                });
             }
         }
         await this.studentRepository.save(student);
@@ -215,20 +295,98 @@ let StudentService = class StudentService {
             student: await this.findOne(student.id),
         };
     }
-    async findAll() {
-        const students = await this.studentRepository.find({
-            relations: ['teachers', 'lessons', 'installments', 'branch', 'section'],
+    async logPresence(studentId, lessonName) {
+        const student = await this.findOne(studentId);
+        student.activities.push({
+            title: 'تم تسجيل حضور',
+            subTitle: `تم تسجيل حضور الطالب في حصة ${lessonName}.`,
+            createdAt: new Date(),
         });
-        const studentsWithRecalculatedData = students.map(student => this.recalculateStudentFinancials(student));
+        return this.studentRepository.save(student);
+    }
+    async logAbsence(studentId, lessonName) {
+        const student = await this.findOne(studentId);
+        student.activities.push({
+            title: 'تم تسجيل غياب',
+            subTitle: `تم تسجيل غياب الطالب في حصة ${lessonName}.`,
+            createdAt: new Date(),
+        });
+        return this.studentRepository.save(student);
+    }
+    async findAll(branchId, sectionId, isLate, user) {
+        const query = this.studentRepository
+            .createQueryBuilder('student')
+            .leftJoinAndSelect('student.teachers', 'teachers')
+            .leftJoinAndSelect('student.installments', 'installments')
+            .leftJoinAndSelect('student.branch', 'branch')
+            .leftJoinAndSelect('student.section', 'section')
+            .leftJoinAndSelect('student.attendances', 'attendances')
+            .leftJoinAndSelect('attendances.lesson', 'attendedLesson');
+        if (user.role === user_role_enum_1.UserRole.ASSISTANT) {
+            const assistant = await this.assistantRepository.findOne({
+                where: { userId: user.id },
+                relations: ['branch'],
+            });
+            if (!assistant || !assistant.branch?.id) {
+                return { students: [] };
+            }
+            query.andWhere('student.branch.id = :branchId', {
+                branchId: assistant.branch.id,
+            });
+        }
+        else if (user.role === user_role_enum_1.UserRole.ADMIN) {
+            if (branchId) {
+                query.andWhere('student.branch.id = :branchId', { branchId });
+            }
+            if (sectionId) {
+                const keyword = decodeURIComponent(sectionId);
+                query.andWhere('section.name ILIKE :keyword', {
+                    keyword: `%${keyword}%`,
+                });
+            }
+        }
+        const students = await query.getMany();
+        let studentsWithRecalculatedData = students.map((student) => this.recalculateStudentFinancials(student));
+        if (isLate === 'true') {
+            studentsWithRecalculatedData = studentsWithRecalculatedData.filter((student) => student.isLate);
+        }
         return { students: studentsWithRecalculatedData };
+    }
+    async findAllName(user) {
+        const query = this.studentRepository
+            .createQueryBuilder('student')
+            .select(['student.id', 'student.firstName', 'student.lastName'])
+            .leftJoin('student.branch', 'branch');
+        if (user.role === user_role_enum_1.UserRole.ASSISTANT) {
+            const assistant = await this.assistantRepository.findOne({
+                where: { userId: user.id },
+                relations: ['branch'],
+            });
+            if (!assistant || !assistant.branch?.id) {
+                return { students: [] };
+            }
+            query.andWhere('branch.id = :branchId', {
+                branchId: assistant.branch.id,
+            });
+        }
+        const students = await query.getMany();
+        return { students };
     }
     async findOne(id) {
         const student = await this.studentRepository.findOne({
             where: { id },
-            relations: ['teachers', 'lessons', 'installments', 'branch', 'section'],
+            relations: [
+                'teachers',
+                'lessons',
+                'installments',
+                'branch',
+                'section',
+                'attendances',
+                'attendances.lesson',
+            ],
         });
         if (!student) {
-            throw new common_1.NotFoundException('Student not found');
+            throw new common_1.NotFoundException('هذا الطالب غير موجود');
         }
         return this.recalculateStudentFinancials(student);
     }
@@ -238,7 +396,7 @@ let StudentService = class StudentService {
             relations: ['teachers', 'lessons', 'branch', 'section', 'installments'],
         });
         if (!student) {
-            throw new common_1.NotFoundException('Student not found with this phone number');
+            throw new common_1.NotFoundException('هذا الطالب غير موجود with this phone number');
         }
         return this.recalculateStudentFinancials(student);
     }
@@ -248,7 +406,7 @@ let StudentService = class StudentService {
             relations: ['teachers', 'lessons', 'branch', 'section', 'installments'],
         });
         if (!student) {
-            throw new common_1.NotFoundException('Student not found with this manual ID');
+            throw new common_1.NotFoundException('هذا الطالب غير موجود with this manual ID');
         }
         return this.recalculateStudentFinancials(student);
     }
@@ -268,7 +426,7 @@ let StudentService = class StudentService {
             relations: ['teachers'],
         });
         if (!student) {
-            throw new common_1.NotFoundException('Student not found');
+            throw new common_1.NotFoundException('هذا الطالب غير موجود');
         }
         return student.teachers;
     }
@@ -278,7 +436,7 @@ let StudentService = class StudentService {
             relations: ['lessons'],
         });
         if (!student) {
-            throw new common_1.NotFoundException('Student not found');
+            throw new common_1.NotFoundException('هذا الطالب غير موجود');
         }
         return student.lessons;
     }
@@ -290,10 +448,15 @@ exports.StudentService = StudentService = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(installment_entity_1.Installment)),
     __param(2, (0, typeorm_1.InjectRepository)(branch_entity_1.Branch)),
     __param(3, (0, typeorm_1.InjectRepository)(section_entity_1.Section)),
+    __param(4, (0, typeorm_1.InjectRepository)(lesson_attendance_entity_1.LessonAttendance)),
+    __param(5, (0, typeorm_1.InjectRepository)(assistant_entity_1.Assistant)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        installment_service_1.InstallmentService])
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        installment_service_1.InstallmentService,
+        revenue_service_1.RevenueService])
 ], StudentService);
 //# sourceMappingURL=student.service.js.map

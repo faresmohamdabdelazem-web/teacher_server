@@ -1,3 +1,8 @@
+declare class ActivityDto {
+    title: string;
+    subTitle: string;
+    createdAt?: Date;
+}
 export declare class CreateStudentDto {
     firstName: string;
     lastName: string;
@@ -22,4 +27,6 @@ export declare class CreateStudentDto {
     throughPerson?: string;
     cashReceiver?: string;
     receiptNumber?: string;
+    activities?: ActivityDto[];
 }
+export {};

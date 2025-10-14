@@ -5,9 +5,23 @@ import {
   IsNumber,
   Length,
   IsUUID,
+  IsArray,
+  ValidateNested, // 🔹 لاستخدامه في التحقق من صحة الكائنات داخل المصفوفة
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { IsBase64OrURL } from '../../decorators/isBase64OrURL.decorator';
+
+// 🔹👇 هذا هو تعريف الـ DTO الخاص بالـ Activity
+class ActivityDto {
+  @IsString()
+  title: string;
+
+  @IsString()
+  subTitle: string;
+
+  @Type(() => Date)
+  createdAt?: Date;
+}
 
 export class CreateStudentDto {
   @IsNotEmpty()
@@ -30,8 +44,6 @@ export class CreateStudentDto {
   @IsString()
   parentPhoneNumber?: string;
 
-
-
   @IsOptional()
   @IsString()
   grade?: string;
@@ -48,12 +60,13 @@ export class CreateStudentDto {
   @IsNotEmpty()
   @IsUUID('4', { message: 'Branch ID must be a valid UUID.' })
   branchId: string;
+
   @IsNotEmpty()
   @IsUUID('4', { message: 'Sectio ID must be a valid UUID.' })
   sectionId: string;
 
   @IsOptional()
-  notes?: {title: string;descroption:string ;createdAt?: Date }[];
+  notes?: { title: string; descroption: string; createdAt?: Date }[];
 
   @IsOptional()
   @IsBase64OrURL()
@@ -89,4 +102,11 @@ export class CreateStudentDto {
   @IsOptional()
   @IsString()
   receiptNumber?: string;
+
+  // 🔹👇 تم تحديث هذا الجزء
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true }) // للتحقق من كل عنصر في المصفوفة
+  @Type(() => ActivityDto) // لتحديد نوع العناصر داخل المصفوفة
+  activities?: ActivityDto[];
 }

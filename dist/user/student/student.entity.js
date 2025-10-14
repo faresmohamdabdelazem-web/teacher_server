@@ -16,6 +16,8 @@ const lesson_entity_1 = require("../../lesson/entities/lesson.entity");
 const installment_entity_1 = require("../../Installment/entities/installment.entity");
 const branch_entity_1 = require("../../branch/entities/branch.entity");
 const section_entity_1 = require("../../section/entities/section.entity");
+const revenues_entity_1 = require("../../revenues/entities/revenues.entity");
+const lesson_attendance_entity_1 = require("../../lesson/entities/lesson-attendance.entity");
 let Student = class Student {
 };
 exports.Student = Student;
@@ -101,7 +103,11 @@ __decorate([
     __metadata("design:type", branch_entity_1.Branch)
 ], Student.prototype, "branch", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => section_entity_1.Section, (section) => section.students, { eager: true }),
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Student.prototype, "branchId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => section_entity_1.Section, (section) => section.students),
     (0, typeorm_1.JoinColumn)({ name: 'sectionId' }),
     __metadata("design:type", section_entity_1.Section)
 ], Student.prototype, "section", void 0);
@@ -138,11 +144,23 @@ __decorate([
     __metadata("design:type", Array)
 ], Student.prototype, "lessons", void 0);
 __decorate([
+    (0, typeorm_1.OneToMany)(() => revenues_entity_1.Revenue, (revenue) => revenue.student),
+    __metadata("design:type", Array)
+], Student.prototype, "revenues", void 0);
+__decorate([
     (0, typeorm_1.OneToMany)(() => installment_entity_1.Installment, (installment) => installment.student, {
         cascade: true,
     }),
     __metadata("design:type", Array)
 ], Student.prototype, "installments", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'jsonb', array: false, default: [] }),
+    __metadata("design:type", Array)
+], Student.prototype, "activities", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => lesson_attendance_entity_1.LessonAttendance, (attendance) => attendance.student),
+    __metadata("design:type", Array)
+], Student.prototype, "attendances", void 0);
 exports.Student = Student = __decorate([
     (0, typeorm_1.Entity)('students')
 ], Student);

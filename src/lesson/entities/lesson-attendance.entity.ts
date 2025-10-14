@@ -28,21 +28,21 @@ export class LessonAttendance {
   @Column()
   studentId: string;
 
-  @Column({ 
-    type: 'enum', 
-    enum: AttendanceStatus, 
-    default: AttendanceStatus.ABSENT 
+  @Column({
+    type: 'enum',
+    enum: AttendanceStatus,
+    default: AttendanceStatus.ABSENT,
   })
   status: AttendanceStatus;
 
   @Column({ type: 'timestamp', nullable: true })
-  attendanceTime: Date; // When the student was marked present
+  attendanceTime: Date;
 
   @Column({ type: 'text', nullable: true })
-  notes: string; // Additional notes from teacher/assistant
+  notes: string;
 
   @Column({ nullable: true })
-  markedBy: string; // ID of teacher/assistant who marked attendance
+  markedBy: string;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -50,12 +50,13 @@ export class LessonAttendance {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // Relationships
-  @ManyToOne(() => Lesson, (lesson) => lesson.id)
+  // ✅👇 تم تصحيح هذا الجزء
+  @ManyToOne(() => Lesson, (lesson) => lesson.attendances)
   @JoinColumn({ name: 'lessonId' })
   lesson: Lesson;
 
-  @ManyToOne(() => Student, (student) => student.id)
+  // ✅👇 وتم تصحيح هذا الجزء أيضًا
+  @ManyToOne(() => Student, (student) => student.attendances)
   @JoinColumn({ name: 'studentId' })
   student: Student;
-} 
+}

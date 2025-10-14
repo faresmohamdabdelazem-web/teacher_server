@@ -40,7 +40,9 @@ export declare class TeacherController {
     }>;
     update(id: string, updateTeacherDto: any): Promise<import("./teacher.entity").Teacher>;
     remove(id: string): Promise<void>;
-    createAssistant(createAssistantData: CreateUserDto, user: UserPayload): Promise<{
+    createAssistant(createAssistantData: CreateUserDto & {
+        branchId?: string;
+    }, user: UserPayload): Promise<{
         message: string;
         assistant: {
             id: string;
@@ -50,7 +52,7 @@ export declare class TeacherController {
             role: UserRole;
             phone: string;
             createdAt: Date;
-            teacherId: string;
+            branchId: string;
         };
     }>;
     createStudent(createStudentDto: CreateStudentDto, user: UserPayload): Promise<{

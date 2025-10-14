@@ -14,6 +14,7 @@ import { AdminController } from './admin/admin.controller';
 import { InstallmentModule } from './Installment/installment.module';
 import { BranchModule } from './branch/branch.module';
 import { SectionModule } from './section/section.module';
+import { RevenueModule } from './revenues/revenue.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SectionModule } from './section/section.module';
     UserModule,
     InstallmentModule,
     BranchModule,
+    RevenueModule,
     CloudinaryModule,
     MailModule,
     MailerModule.forRoot({
