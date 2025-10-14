@@ -169,6 +169,7 @@ async create(createUserDto: CreateUserDto) {
   async findOneById(value: string) {
     return await this.userRepository.findOne({
       where: { userId: value },
+      
     });
   }
 

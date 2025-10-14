@@ -21,13 +21,15 @@ const user_module_1 = require("../user/user.module");
 const notification_module_1 = require("../notification/notification.module");
 const student_module_1 = require("../user/student/student.module");
 const installment_entity_1 = require("../Installment/entities/installment.entity");
+const assistant_entity_1 = require("../user/assistant/assistant.entity");
+const section_entity_1 = require("../section/entities/section.entity");
 let LessonModule = class LessonModule {
 };
 exports.LessonModule = LessonModule;
 exports.LessonModule = LessonModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([lesson_entity_1.Lesson, lesson_attendance_entity_1.LessonAttendance, teacher_entity_1.Teacher, student_entity_1.Student, teacher_stats_entity_1.TeacherStats, installment_entity_1.Installment]),
+            typeorm_1.TypeOrmModule.forFeature([lesson_entity_1.Lesson, lesson_attendance_entity_1.LessonAttendance, teacher_entity_1.Teacher, student_entity_1.Student, teacher_stats_entity_1.TeacherStats, installment_entity_1.Installment, assistant_entity_1.Assistant, section_entity_1.Section]),
             (0, common_1.forwardRef)(() => user_module_1.UserModule),
             notification_module_1.NotificationModule,
             (0, common_1.forwardRef)(() => student_module_1.StudentModule)

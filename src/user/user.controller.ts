@@ -97,7 +97,7 @@ export class UserController {
     }
 
     // Create the student entity
-    const student = await this.studentService.create(createStudentData);
+    const student = await this.studentService.create(createStudentData,user);
 
     // Find the assistant entity and their teacher
     const assistant = await this.assistantService.findByUserId(currentUser.userId);

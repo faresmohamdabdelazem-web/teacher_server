@@ -102,7 +102,7 @@ let TeacherController = class TeacherController {
         if (!currentUser || currentUser.role !== user_role_enum_1.UserRole.TEACHER) {
             throw new Error('Only teachers can create students');
         }
-        const student = await this.studentService.create(createStudentDto);
+        const student = await this.studentService.create(createStudentDto, user);
         await this.teacherService.addStudentToTeacher(currentUser.userId, student.id);
         return {
             message: 'Student created successfully by teacher',

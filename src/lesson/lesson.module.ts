@@ -12,9 +12,11 @@ import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notification/notification.module';
 import { StudentModule } from "../user/student/student.module";
 import { Installment } from "../Installment/entities/installment.entity"
+import { Assistant } from 'src/user/assistant/assistant.entity';
+import { Section } from 'src/section/entities/section.entity';
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Lesson, LessonAttendance, Teacher, Student, TeacherStats,Installment]),
+    TypeOrmModule.forFeature([Lesson, LessonAttendance, Teacher, Student, TeacherStats,Installment,Assistant,Section]),
     forwardRef(() => UserModule),
     NotificationModule,
     forwardRef(() => StudentModule)

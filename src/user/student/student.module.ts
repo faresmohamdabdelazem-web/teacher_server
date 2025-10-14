@@ -14,10 +14,11 @@ import { Section } from 'src/section/entities/section.entity';
 import { Branch } from 'src/branch/entities/branch.entity';
 import { RevenueModule } from 'src/revenues/revenue.module';
 import { Installment } from "../../Installment/entities/installment.entity";
+import { Assistant } from '../assistant';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Student, Section, Branch, Installment, LessonAttendance]),
+    TypeOrmModule.forFeature([Student, Section, Branch, Installment, LessonAttendance,Assistant]),
     SectionModule,
     BranchModule,
     RevenueModule,

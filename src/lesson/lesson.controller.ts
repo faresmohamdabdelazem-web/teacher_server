@@ -45,12 +45,13 @@ export class LessonController {
   @UseGuards(AuthGuard)
   @Roles(UserRole.ADMIN, UserRole.TEACHER, UserRole.ASSISTANT)
   findAll(
+    @GetSignedUser() user: any,
     @Query("date") scheduledDate:string,
     @Query("sectionId") sectionId:string,
     @Query("branchId") branchId:string,
    
   ) {
-    return this.lessonService.findAll(scheduledDate,sectionId,branchId);
+    return this.lessonService.findAll(user,scheduledDate,sectionId,branchId);
   }
 
   @Get('subject/:subject')

@@ -17,7 +17,8 @@ import { AuthGuard } from 'src/auth/guard/auth.guard';
 import { RoleGuard } from 'src/auth/guard/role.guard';
 import { Roles } from 'src/decorators/role.decorator';
 import { UserRole } from '../user.role.enum';
-// --- هذا هو السطر الذي تم تصحيحه ---
+
+import { GetSignedUser } from 'src/decorators/get.signed.user.decorator';
 import { PayInstallmentDto } from 'src/Installment/dto/pay-installment.dto';
 
 @Controller('students')
@@ -28,11 +29,16 @@ export class StudentController {
   ) {}
 
   @Post()
-  create(@Body() createStudentDto: CreateStudentDto) {
-    return this.studentService.create(createStudentDto);
+    @UseGuards(AuthGuard, RoleGuard)
+     @Roles(UserRole.ADMIN,UserRole.ASSISTANT)
+  create(@Body() createStudentDto: CreateStudentDto,
+@GetSignedUser() user: any,
+) {
+    return this.studentService.create(createStudentDto,user);
   }
 
   @Post(':id/pay')
+
   payInstallment(
     @Param('id') id: string,
     @Body() payInstallmentDto: PayInstallmentDto,
@@ -41,19 +47,26 @@ export class StudentController {
   }
 
  @Get()
+   @UseGuards(AuthGuard, RoleGuard)
+     @Roles(UserRole.ADMIN,UserRole.ASSISTANT)
 findAll(
+   @GetSignedUser() user: any,
   @Query('branchId') branchId?: string,
   @Query('sectionId') sectionId?: string,
   @Query('isLate') isLate?: string,
+
 ) {
-  return this.studentService.findAll(branchId, sectionId, isLate);
+  return this.studentService.findAll(branchId, sectionId, isLate,user);
 }
   
 
- @Get("name")
-  findAllName() {
-    return this.studentService.findAll();
-  }
+@Get('name')
+@UseGuards(AuthGuard, RoleGuard)
+@Roles(UserRole.ADMIN, UserRole.ASSISTANT)
+findAllName(@GetSignedUser() user: any) {
+  return this.studentService.findAllName(user);
+}
+
 
 
 

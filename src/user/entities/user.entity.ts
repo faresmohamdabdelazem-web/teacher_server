@@ -8,7 +8,9 @@ import {
   Index,
   OneToOne,
   JoinColumn,
+  ManyToOne,
 } from 'typeorm';
+import { Branch } from 'src/branch/entities/branch.entity';
 import { ulid } from 'ulid';
 import { Exclude, Expose } from 'class-transformer';
 import { UserRole } from '../user.role.enum';
@@ -66,4 +68,16 @@ export class User {
     default: UserRole.CUSTOMER,
   })
   role: UserRole;
+
+
+
+    // ✅ ربط المستخدم بالفرع
+  @ManyToOne(() => Branch, (branch) => branch.users, {
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'branchId' })
+  branch: Branch;
+
+  @Column({ nullable: true })
+  branchId: string;
 }

@@ -267,7 +267,7 @@ export class AuthService {
       nationalId: createStudentDto.nationalId,
       branchId: createStudentDto.branchId,
    
-    });
+    },user);
 
     return {
       message: 'Student created successfully by assistant',

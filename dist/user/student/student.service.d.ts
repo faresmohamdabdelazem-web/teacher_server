@@ -10,27 +10,29 @@ import { Section } from 'src/section/entities/section.entity';
 import { Teacher } from '../teacher/teacher.entity';
 import { Lesson } from 'src/lesson/entities/lesson.entity';
 import { RevenueService } from 'src/revenues/revenue.service';
+import { Assistant } from '../assistant/assistant.entity';
 export declare class StudentService {
     private studentRepository;
     private installmentRepository;
     private branchRepository;
     private sectionRepository;
     private attendanceRepository;
+    private assistantRepository;
     private installmentService;
     private readonly revenueService;
-    constructor(studentRepository: Repository<Student>, installmentRepository: Repository<Installment>, branchRepository: Repository<Branch>, sectionRepository: Repository<Section>, attendanceRepository: Repository<LessonAttendance>, installmentService: InstallmentService, revenueService: RevenueService);
+    constructor(studentRepository: Repository<Student>, installmentRepository: Repository<Installment>, branchRepository: Repository<Branch>, sectionRepository: Repository<Section>, attendanceRepository: Repository<LessonAttendance>, assistantRepository: Repository<Assistant>, installmentService: InstallmentService, revenueService: RevenueService);
     private recalculateStudentFinancials;
-    create(createStudentDto: CreateStudentDto): Promise<Student>;
+    create(createStudentDto: CreateStudentDto, user: any): Promise<Student>;
     payInstallment(studentId: string, dto: PayInstallmentDto): Promise<{
         message: string;
         student: Student;
     }>;
     logPresence(studentId: string, lessonName: string): Promise<Student>;
     logAbsence(studentId: string, lessonName: string): Promise<Student>;
-    findAll(branchId?: string, sectionId?: string, isLate?: string): Promise<{
+    findAll(branchId?: string, sectionId?: string, isLate?: string, user?: any): Promise<{
         students: Student[];
     }>;
-    findAllName(): Promise<{
+    findAllName(user?: any): Promise<{
         students: {
             id: string;
             firstName: string;

@@ -103,6 +103,10 @@ __decorate([
     __metadata("design:type", branch_entity_1.Branch)
 ], Student.prototype, "branch", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Student.prototype, "branchId", void 0);
+__decorate([
     (0, typeorm_1.ManyToOne)(() => section_entity_1.Section, (section) => section.students),
     (0, typeorm_1.JoinColumn)({ name: 'sectionId' }),
     __metadata("design:type", section_entity_1.Section)

@@ -1,3 +1,4 @@
+import { Branch } from 'src/branch/entities/branch.entity';
 import { UserRole } from '../user.role.enum';
 import { Teacher } from '../teacher/teacher.entity';
 export declare class User {
@@ -14,4 +15,6 @@ export declare class User {
     updatedAt: Date;
     teacher: Teacher;
     role: UserRole;
+    branch: Branch;
+    branchId: string;
 }

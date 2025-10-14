@@ -13,7 +13,7 @@ import { Section } from 'src/section/entities/section.entity';
 import { Revenue } from 'src/revenues/entities/revenues.entity';
 import { Lesson } from 'src/lesson/entities/lesson.entity';
 import { Assistant } from 'src/user/assistant/assistant.entity'; // ✅ تأكد من المسار الصحيح
-
+import { User } from 'src/user/entities/user.entity';
 @Entity('branches')
 export class Branch {
   @PrimaryGeneratedColumn('uuid')
@@ -57,4 +57,7 @@ export class Branch {
 
    @OneToMany(() => Lesson, (lesson) => lesson.branch)
   lessons: Lesson[];
+
+  @OneToMany(() => User, (user) => user.branch)
+users: User[];
 }

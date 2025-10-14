@@ -164,7 +164,7 @@ async createAssistant(
       throw new Error('Only teachers can create students');
     }
     // Create the student
-    const student = await this.studentService.create(createStudentDto);
+    const student = await this.studentService.create(createStudentDto,user);
     // Associate the student with the teacher
     await this.teacherService.addStudentToTeacher(currentUser.userId, student.id);
     return {

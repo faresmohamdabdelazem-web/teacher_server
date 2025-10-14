@@ -80,6 +80,11 @@ export class Student {
   @JoinColumn({ name: 'branchId' })
   branch: Branch;
 
+
+@Column({ nullable: true })
+branchId: string;
+
+  
   @ManyToOne(() => Section, (section) => section.students)
   @JoinColumn({ name: 'sectionId' })
   section: Section;

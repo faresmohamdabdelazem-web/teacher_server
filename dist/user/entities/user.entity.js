@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
 const typeorm_1 = require("typeorm");
+const branch_entity_1 = require("../../branch/entities/branch.entity");
 const class_transformer_1 = require("class-transformer");
 const user_role_enum_1 = require("../user.role.enum");
 const teacher_entity_1 = require("../teacher/teacher.entity");
@@ -77,6 +78,17 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], User.prototype, "role", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => branch_entity_1.Branch, (branch) => branch.users, {
+        onDelete: 'SET NULL',
+    }),
+    (0, typeorm_1.JoinColumn)({ name: 'branchId' }),
+    __metadata("design:type", branch_entity_1.Branch)
+], User.prototype, "branch", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "branchId", void 0);
 exports.User = User = __decorate([
     (0, typeorm_1.Entity)()
 ], User);

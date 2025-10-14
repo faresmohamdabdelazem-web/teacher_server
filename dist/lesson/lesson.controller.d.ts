@@ -13,7 +13,7 @@ export declare class LessonController {
     create(createLessonDto: CreateLessonDto, user: any): Promise<{
         lesson: import("./entities/lesson.entity").Lesson;
     }>;
-    findAll(scheduledDate: string, sectionId: string, branchId: string): Promise<{
+    findAll(user: any, scheduledDate: string, sectionId: string, branchId: string): Promise<{
         lessons: any[];
     }>;
     findBySubject(subject: string): Promise<{

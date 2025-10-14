@@ -50,6 +50,8 @@ export declare class UserService {
             updatedAt: Date;
             teacher: import("./teacher/teacher.entity").Teacher;
             role: UserRole;
+            branch: import("../branch/entities/branch.entity").Branch;
+            branchId: string;
         };
     }>;
     remove(userId: string): Promise<{

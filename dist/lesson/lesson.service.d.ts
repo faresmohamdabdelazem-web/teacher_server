@@ -5,6 +5,7 @@ import { CreateLessonDto } from './dto/create-lesson.dto';
 import { SubscribeLessonDto } from './dto/subscribe-lesson.dto';
 import { UnsubscribeLessonDto } from './dto/unsubscribe-lesson.dto';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
+import { Assistant } from 'src/user/assistant/assistant.entity';
 import { StartAttendanceDto } from './dto/start-attendance.dto';
 import { StatsPeriod, TeacherStatsResponse } from './dto/teacher-stats.dto';
 import { Teacher } from '../user/teacher/teacher.entity';
@@ -13,21 +14,24 @@ import { UserService } from '../user/user.service';
 import { TeacherStatsService } from './teacher-stats.service';
 import { WhatsAppService } from '../notification/whatsapp.service';
 import { StudentService } from '../user/student/student.service';
+import { Section } from 'src/section/entities/section.entity';
 export declare class LessonService {
+    private readonly assistantRepository;
     private lessonRepository;
     private attendanceRepository;
     private teacherRepository;
     private studentRepository;
+    private readonly sectionRepository;
     private readonly userService;
     readonly teacherStatsService: TeacherStatsService;
     private readonly whatsAppService;
     private studentservice;
-    constructor(lessonRepository: Repository<Lesson>, attendanceRepository: Repository<LessonAttendance>, teacherRepository: Repository<Teacher>, studentRepository: Repository<Student>, userService: UserService, teacherStatsService: TeacherStatsService, whatsAppService: WhatsAppService, studentservice: StudentService);
+    constructor(assistantRepository: Repository<Assistant>, lessonRepository: Repository<Lesson>, attendanceRepository: Repository<LessonAttendance>, teacherRepository: Repository<Teacher>, studentRepository: Repository<Student>, sectionRepository: Repository<Section>, userService: UserService, teacherStatsService: TeacherStatsService, whatsAppService: WhatsAppService, studentservice: StudentService);
     create(createLessonDto: CreateLessonDto, userId: string, userRole: string): Promise<{
         lesson: Lesson;
     }>;
     private checkAndUpdateExpiredLessons;
-    findAll(scheduledDate?: string, sectionId?: string, branchId?: string): Promise<{
+    findAll(user?: any, scheduledDate?: string, sectionId?: string, branchId?: string): Promise<{
         lessons: any[];
     }>;
     findOne(id: string): Promise<{

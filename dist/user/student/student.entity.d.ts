@@ -31,6 +31,7 @@ export declare class Student {
     remainingBalance: number;
     throughPerson?: string;
     branch: Branch;
+    branchId: string;
     section: Section;
     sectionId: string;
     cashReceiver?: string;

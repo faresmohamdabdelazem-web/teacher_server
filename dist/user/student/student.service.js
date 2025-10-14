@@ -25,13 +25,16 @@ const branch_entity_1 = require("../../branch/entities/branch.entity");
 const section_entity_1 = require("../../section/entities/section.entity");
 const revenue_service_1 = require("../../revenues/revenue.service");
 const revenues_entity_1 = require("../../revenues/entities/revenues.entity");
+const user_role_enum_1 = require("../user.role.enum");
+const assistant_entity_1 = require("../assistant/assistant.entity");
 let StudentService = class StudentService {
-    constructor(studentRepository, installmentRepository, branchRepository, sectionRepository, attendanceRepository, installmentService, revenueService) {
+    constructor(studentRepository, installmentRepository, branchRepository, sectionRepository, attendanceRepository, assistantRepository, installmentService, revenueService) {
         this.studentRepository = studentRepository;
         this.installmentRepository = installmentRepository;
         this.branchRepository = branchRepository;
         this.sectionRepository = sectionRepository;
         this.attendanceRepository = attendanceRepository;
+        this.assistantRepository = assistantRepository;
         this.installmentService = installmentService;
         this.revenueService = revenueService;
     }
@@ -53,12 +56,22 @@ let StudentService = class StudentService {
         }
         return student;
     }
-    async create(createStudentDto) {
+    async create(createStudentDto, user) {
         const { branchId, sectionId, phoneNumber, firstName, lastName } = createStudentDto;
-        if (phoneNumber) {
-            const existingStudentByPhone = await this.studentRepository.findOneBy({
-                phoneNumber,
+        if (user.role === user_role_enum_1.UserRole.ASSISTANT) {
+            const assistant = await this.assistantRepository.findOne({
+                where: { user: { userId: user.id } },
+                relations: ['branch'],
             });
+            if (!assistant) {
+                throw new common_1.ForbiddenException('Assistant not found');
+            }
+            if (assistant.branch.id !== branchId) {
+                throw new common_1.ForbiddenException('الطلب ليس من نفس فرع المساعد');
+            }
+        }
+        if (phoneNumber) {
+            const existingStudentByPhone = await this.studentRepository.findOneBy({ phoneNumber });
             if (existingStudentByPhone) {
                 throw new common_1.ConflictException('Student with this phone number already exists');
             }
@@ -100,9 +113,7 @@ let StudentService = class StudentService {
         const branchInitial = branch.name.charAt(0).toUpperCase();
         const sectionInitial = section.name.charAt(0).toUpperCase();
         const generatedId = `${branchInitial}${sectionInitial}-${paddedSequence}`;
-        const existingStudentById = await this.studentRepository.findOneBy({
-            id: generatedId,
-        });
+        const existingStudentById = await this.studentRepository.findOneBy({ id: generatedId });
         if (existingStudentById) {
             throw new common_1.ConflictException(`A student with the generated ID "${generatedId}" already exists. Please try again.`);
         }
@@ -141,11 +152,11 @@ let StudentService = class StudentService {
             savedStudent.paymentHistory.push({
                 amount: paidDownPayment,
                 paidAt: new Date(),
-                cashReceiver: savedStudent.cashReceiver || 'Admin',
+                cashReceiver: savedStudent.cashReceiver || user.name || 'Admin',
                 receiptNumber: `DP-${Date.now()}`,
                 installmentNumber: 0,
                 paymentType: pay_installment_dto_1.PaymentType.DOWN_PAYMENT,
-                throughPerson: savedStudent.throughPerson || 'user',
+                throughPerson: savedStudent.throughPerson || user.name || 'user',
             });
             savedStudent.activities.push({
                 title: 'تم دفع دفعة مقدمة',
@@ -302,7 +313,7 @@ let StudentService = class StudentService {
         });
         return this.studentRepository.save(student);
     }
-    async findAll(branchId, sectionId, isLate) {
+    async findAll(branchId, sectionId, isLate, user) {
         const query = this.studentRepository
             .createQueryBuilder('student')
             .leftJoinAndSelect('student.teachers', 'teachers')
@@ -311,14 +322,28 @@ let StudentService = class StudentService {
             .leftJoinAndSelect('student.section', 'section')
             .leftJoinAndSelect('student.attendances', 'attendances')
             .leftJoinAndSelect('attendances.lesson', 'attendedLesson');
-        if (branchId) {
-            query.andWhere('student.branchId = :branchId', { branchId });
-        }
-        if (sectionId) {
-            const keyword = decodeURIComponent(sectionId);
-            query.andWhere('section.name ILIKE :keyword', {
-                keyword: `%${keyword}%`,
+        if (user.role === user_role_enum_1.UserRole.ASSISTANT) {
+            const assistant = await this.assistantRepository.findOne({
+                where: { userId: user.id },
+                relations: ['branch'],
             });
+            if (!assistant || !assistant.branch?.id) {
+                return { students: [] };
+            }
+            query.andWhere('student.branch.id = :branchId', {
+                branchId: assistant.branch.id,
+            });
+        }
+        else if (user.role === user_role_enum_1.UserRole.ADMIN) {
+            if (branchId) {
+                query.andWhere('student.branch.id = :branchId', { branchId });
+            }
+            if (sectionId) {
+                const keyword = decodeURIComponent(sectionId);
+                query.andWhere('section.name ILIKE :keyword', {
+                    keyword: `%${keyword}%`,
+                });
+            }
         }
         const students = await query.getMany();
         let studentsWithRecalculatedData = students.map((student) => this.recalculateStudentFinancials(student));
@@ -327,10 +352,24 @@ let StudentService = class StudentService {
         }
         return { students: studentsWithRecalculatedData };
     }
-    async findAllName() {
-        const students = await this.studentRepository.find({
-            select: ['id', 'firstName', 'lastName'],
-        });
+    async findAllName(user) {
+        const query = this.studentRepository
+            .createQueryBuilder('student')
+            .select(['student.id', 'student.firstName', 'student.lastName'])
+            .leftJoin('student.branch', 'branch');
+        if (user.role === user_role_enum_1.UserRole.ASSISTANT) {
+            const assistant = await this.assistantRepository.findOne({
+                where: { userId: user.id },
+                relations: ['branch'],
+            });
+            if (!assistant || !assistant.branch?.id) {
+                return { students: [] };
+            }
+            query.andWhere('branch.id = :branchId', {
+                branchId: assistant.branch.id,
+            });
+        }
+        const students = await query.getMany();
         return { students };
     }
     async findOne(id) {
@@ -410,7 +449,9 @@ exports.StudentService = StudentService = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(branch_entity_1.Branch)),
     __param(3, (0, typeorm_1.InjectRepository)(section_entity_1.Section)),
     __param(4, (0, typeorm_1.InjectRepository)(lesson_attendance_entity_1.LessonAttendance)),
+    __param(5, (0, typeorm_1.InjectRepository)(assistant_entity_1.Assistant)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

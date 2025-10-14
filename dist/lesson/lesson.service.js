@@ -18,6 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const lesson_entity_1 = require("./entities/lesson.entity");
 const lesson_attendance_entity_1 = require("./entities/lesson-attendance.entity");
+const assistant_entity_1 = require("../user/assistant/assistant.entity");
 const teacher_entity_1 = require("../user/teacher/teacher.entity");
 const student_entity_1 = require("../user/student/student.entity");
 const user_service_1 = require("../user/user.service");
@@ -26,12 +27,15 @@ const typeorm_3 = require("typeorm");
 const teacher_stats_service_1 = require("./teacher-stats.service");
 const whatsapp_service_1 = require("../notification/whatsapp.service");
 const student_service_1 = require("../user/student/student.service");
+const section_entity_1 = require("../section/entities/section.entity");
 let LessonService = class LessonService {
-    constructor(lessonRepository, attendanceRepository, teacherRepository, studentRepository, userService, teacherStatsService, whatsAppService, studentservice) {
+    constructor(assistantRepository, lessonRepository, attendanceRepository, teacherRepository, studentRepository, sectionRepository, userService, teacherStatsService, whatsAppService, studentservice) {
+        this.assistantRepository = assistantRepository;
         this.lessonRepository = lessonRepository;
         this.attendanceRepository = attendanceRepository;
         this.teacherRepository = teacherRepository;
         this.studentRepository = studentRepository;
+        this.sectionRepository = sectionRepository;
         this.userService = userService;
         this.teacherStatsService = teacherStatsService;
         this.whatsAppService = whatsAppService;
@@ -47,6 +51,30 @@ let LessonService = class LessonService {
         if (!user) {
             throw new common_1.NotFoundException('User not found');
         }
+        if (!createLessonDto['sectionId']) {
+            throw new common_1.BadRequestException('Section ID is required to create a lesson');
+        }
+        const section = await this.sectionRepository.findOne({
+            where: { id: createLessonDto['sectionId'] },
+            relations: ['branches'],
+        });
+        if (!section) {
+            throw new common_1.NotFoundException('Section not found');
+        }
+        if (userRole === user_role_enum_1.UserRole.ASSISTANT) {
+            const assistant = await this.assistantRepository.findOne({
+                where: { userId: user.userId },
+                relations: ['branch'],
+            });
+            if (!assistant || !assistant.branch) {
+                throw new common_1.ForbiddenException('Assistant has no assigned branch');
+            }
+            const sectionBranchIds = section.branches.map((b) => b.id);
+            const isInSameBranch = sectionBranchIds.includes(assistant.branch.id);
+            if (!isInSameBranch) {
+                throw new common_1.ForbiddenException('Assistant can only create lessons in sections belonging to their own branch');
+            }
+        }
         if (createLessonDto.startTime) {
             const startTime = new Date(createLessonDto.startTime);
             createLessonDto['attendanceStartTime'] = new Date(startTime.getTime() - 60 * 60 * 1000);
@@ -60,24 +88,21 @@ let LessonService = class LessonService {
             status: lesson_entity_1.LessonStatus.SCHEDULED,
         });
         const savedLesson = await this.lessonRepository.save(lesson);
-        console.log(savedLesson);
+        console.log('✅ Lesson created:', savedLesson);
         if (savedLesson && savedLesson.sectionId) {
             const studentsInSection = await this.studentRepository.find({
                 where: { sectionId: savedLesson.sectionId },
             });
-            console.log(studentsInSection);
             if (studentsInSection.length > 0) {
-                const attendanceRecords = studentsInSection.map((student) => {
-                    return this.attendanceRepository.create({
-                        lessonId: savedLesson.id,
-                        studentId: student.id,
-                        status: lesson_attendance_entity_1.AttendanceStatus.ABSENT,
-                        markedBy: 'system',
-                        attendanceTime: savedLesson.scheduledDate,
-                    });
-                });
+                const attendanceRecords = studentsInSection.map((student) => this.attendanceRepository.create({
+                    lessonId: savedLesson.id,
+                    studentId: student.id,
+                    status: lesson_attendance_entity_1.AttendanceStatus.ABSENT,
+                    markedBy: 'system',
+                    attendanceTime: savedLesson.scheduledDate,
+                }));
                 await this.attendanceRepository.save(attendanceRecords);
-                console.log(attendanceRecords);
+                console.log('✅ Attendance records created:', attendanceRecords.length);
             }
         }
         return { lesson: savedLesson };
@@ -115,7 +140,7 @@ let LessonService = class LessonService {
             await this.lessonRepository.save(lessonsToUpdate);
         }
     }
-    async findAll(scheduledDate, sectionId, branchId) {
+    async findAll(user, scheduledDate, sectionId, branchId) {
         const where = {};
         if (scheduledDate) {
             const date = new Date(scheduledDate);
@@ -130,9 +155,20 @@ let LessonService = class LessonService {
             where,
             relations: ['teacher', 'students', 'section', 'section.branches'],
         });
-        const filteredLessons = branchId
-            ? lessons.filter((lesson) => lesson.section?.branches?.some((b) => b.id === branchId))
-            : lessons;
+        let filteredLessons = lessons;
+        if (user.role === user_role_enum_1.UserRole.ASSISTANT) {
+            const assistant = await this.assistantRepository.findOne({
+                where: { userId: user.id },
+                relations: ['branch'],
+            });
+            if (!assistant || !assistant.branch) {
+                return { lessons: [] };
+            }
+            filteredLessons = lessons.filter((lesson) => lesson.section?.branches?.some((b) => b.id === assistant.branch.id));
+        }
+        else if (user.role === user_role_enum_1.UserRole.ADMIN && branchId) {
+            filteredLessons = lessons.filter((lesson) => lesson.section?.branches?.some((b) => b.id === branchId));
+        }
         await this.checkAndUpdateExpiredLessons(filteredLessons);
         const lessonsWithAttendance = await Promise.all(filteredLessons.map(async (lesson) => {
             const lessonDate = new Date(lesson.scheduledDate);
@@ -163,8 +199,8 @@ let LessonService = class LessonService {
                 sectionNameAr: lesson.section?.nameAr ?? null,
                 branchNames: lesson.section?.branches?.map((b) => b.name) ?? [],
                 branchNamesAr: lesson.section?.branches?.map((b) => b.nameAr) ?? [],
-                price: lesson.price,
                 branchId: lesson.section?.branches?.[0]?.id ?? null,
+                price: lesson.price,
                 pricingType: lesson.pricingType,
                 grade: lesson.grade,
                 students: lesson.students,
@@ -661,8 +697,25 @@ let LessonService = class LessonService {
         return { attendance: savedAttendance };
     }
     async getLessonAttendance(lessonId, date) {
-        const lesson = await this.findOne(lessonId);
-        let whereCondition = { lessonId };
+        const lesson = await this.lessonRepository.findOne({
+            where: { id: lessonId },
+            relations: ['section', 'section.branches'],
+        });
+        if (!lesson) {
+            throw new common_1.NotFoundException('Lesson not found');
+        }
+        const sectionId = lesson.section?.id;
+        const branchId = lesson.section?.branches?.[0]?.id;
+        if (!sectionId || !branchId) {
+            throw new common_1.NotFoundException('Lesson section or branch not found');
+        }
+        let whereCondition = {
+            lessonId,
+            student: {
+                sectionId,
+                branchId,
+            },
+        };
         if (date) {
             const targetDate = new Date(date);
             const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
@@ -671,16 +724,18 @@ let LessonService = class LessonService {
         }
         const attendance = await this.attendanceRepository.find({
             where: whereCondition,
-            relations: ['student', 'lesson'],
+            relations: ['student', 'lesson', 'student.section', 'student.branch'],
             order: {
                 status: 'ASC',
                 student: { firstName: 'ASC' },
             },
         });
         attendance.sort((a, b) => {
-            if (a.status === lesson_attendance_entity_1.AttendanceStatus.PRESENT && b.status !== lesson_attendance_entity_1.AttendanceStatus.PRESENT)
+            if (a.status === lesson_attendance_entity_1.AttendanceStatus.PRESENT &&
+                b.status !== lesson_attendance_entity_1.AttendanceStatus.PRESENT)
                 return -1;
-            if (a.status !== lesson_attendance_entity_1.AttendanceStatus.PRESENT && lesson_attendance_entity_1.AttendanceStatus.PRESENT)
+            if (a.status !== lesson_attendance_entity_1.AttendanceStatus.PRESENT &&
+                b.status === lesson_attendance_entity_1.AttendanceStatus.PRESENT)
                 return 1;
             return 0;
         });
@@ -1276,11 +1331,15 @@ let LessonService = class LessonService {
 exports.LessonService = LessonService;
 exports.LessonService = LessonService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, typeorm_1.InjectRepository)(lesson_entity_1.Lesson)),
-    __param(1, (0, typeorm_1.InjectRepository)(lesson_attendance_entity_1.LessonAttendance)),
-    __param(2, (0, typeorm_1.InjectRepository)(teacher_entity_1.Teacher)),
-    __param(3, (0, typeorm_1.InjectRepository)(student_entity_1.Student)),
+    __param(0, (0, typeorm_1.InjectRepository)(assistant_entity_1.Assistant)),
+    __param(1, (0, typeorm_1.InjectRepository)(lesson_entity_1.Lesson)),
+    __param(2, (0, typeorm_1.InjectRepository)(lesson_attendance_entity_1.LessonAttendance)),
+    __param(3, (0, typeorm_1.InjectRepository)(teacher_entity_1.Teacher)),
+    __param(4, (0, typeorm_1.InjectRepository)(student_entity_1.Student)),
+    __param(5, (0, typeorm_1.InjectRepository)(section_entity_1.Section)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
