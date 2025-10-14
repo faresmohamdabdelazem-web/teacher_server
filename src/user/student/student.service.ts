@@ -412,11 +412,12 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
     return this.studentRepository.save(student);
   }
 
-
- async findAll(
+async findAll(
   branchId?: string,
   sectionId?: string,
   isLate?: string,
+  phoneNumber?: string,
+  name?: string,
   user?: any, // من @GetSignedUser()
 ): Promise<{ students: Student[] }> {
   const query = this.studentRepository
@@ -430,18 +431,15 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
 
   // ✅ الحالة الأولى: المستخدم مساعد ASSISTANT
   if (user.role === UserRole.ASSISTANT) {
-    // نجيب بيانات المساعد علشان نعرف الفرع بتاعه
     const assistant = await this.assistantRepository.findOne({
       where: { userId: user.id },
-      relations: ['branch'], // فقط الفرع
+      relations: ['branch'],
     });
 
-    // لو المساعد مش مربوط بفرع -> نرجع قائمة فاضية
     if (!assistant || !assistant.branch?.id) {
       return { students: [] };
     }
 
-    // نفلتر الطلاب بنفس الفرع بتاع المساعد فقط
     query.andWhere('student.branch.id = :branchId', {
       branchId: assistant.branch.id,
     });
@@ -461,6 +459,14 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
     }
   }
 
+if (name) {
+  const keyword = `%${decodeURIComponent(name)}%`;
+  query.andWhere(
+    '(student.firstName ILIKE :keyword OR student.lastName ILIKE :keyword OR student.phoneNumber ILIKE :keyword)',
+    { keyword },
+  );
+}
+
   // ✅ تنفيذ الاستعلام
   const students = await query.getMany();
 
@@ -478,6 +484,7 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
 
   return { students: studentsWithRecalculatedData };
 }
+
 
 
 

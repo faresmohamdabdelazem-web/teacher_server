@@ -34,8 +34,8 @@ let StudentController = class StudentController {
     payInstallment(id, payInstallmentDto) {
         return this.studentService.payInstallment(id, payInstallmentDto);
     }
-    findAll(user, branchId, sectionId, isLate) {
-        return this.studentService.findAll(branchId, sectionId, isLate, user);
+    findAll(user, branchId, sectionId, phoneNumber, name, isLate) {
+        return this.studentService.findAll(branchId, sectionId, isLate, phoneNumber, name, user);
     }
     findAllName(user) {
         return this.studentService.findAllName(user);
@@ -94,9 +94,11 @@ __decorate([
     __param(0, (0, get_signed_user_decorator_1.GetSignedUser)()),
     __param(1, (0, common_1.Query)('branchId')),
     __param(2, (0, common_1.Query)('sectionId')),
-    __param(3, (0, common_1.Query)('isLate')),
+    __param(3, (0, common_1.Query)('phoneNumber')),
+    __param(4, (0, common_1.Query)('name')),
+    __param(5, (0, common_1.Query)('isLate')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String, String]),
+    __metadata("design:paramtypes", [Object, String, String, String, String, String]),
     __metadata("design:returntype", void 0)
 ], StudentController.prototype, "findAll", null);
 __decorate([

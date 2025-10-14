@@ -81,6 +81,10 @@ let LessonService = class LessonService {
         }
         if (createLessonDto.scheduledDate) {
             const scheduledDate = new Date(createLessonDto.scheduledDate);
+            const now = new Date();
+            if (scheduledDate < now) {
+                throw new common_1.BadRequestException('لا يمكنك انشاء محاضرة في وقت في الماضي');
+            }
             createLessonDto.scheduledDate = scheduledDate.toISOString();
         }
         const lesson = this.lessonRepository.create({
@@ -88,7 +92,6 @@ let LessonService = class LessonService {
             status: lesson_entity_1.LessonStatus.SCHEDULED,
         });
         const savedLesson = await this.lessonRepository.save(lesson);
-        console.log('✅ Lesson created:', savedLesson);
         if (savedLesson && savedLesson.sectionId) {
             const studentsInSection = await this.studentRepository.find({
                 where: { sectionId: savedLesson.sectionId },
@@ -102,7 +105,6 @@ let LessonService = class LessonService {
                     attendanceTime: savedLesson.scheduledDate,
                 }));
                 await this.attendanceRepository.save(attendanceRecords);
-                console.log('✅ Attendance records created:', attendanceRecords.length);
             }
         }
         return { lesson: savedLesson };

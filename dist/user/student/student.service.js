@@ -313,7 +313,7 @@ let StudentService = class StudentService {
         });
         return this.studentRepository.save(student);
     }
-    async findAll(branchId, sectionId, isLate, user) {
+    async findAll(branchId, sectionId, isLate, phoneNumber, name, user) {
         const query = this.studentRepository
             .createQueryBuilder('student')
             .leftJoinAndSelect('student.teachers', 'teachers')
@@ -344,6 +344,10 @@ let StudentService = class StudentService {
                     keyword: `%${keyword}%`,
                 });
             }
+        }
+        if (name) {
+            const keyword = `%${decodeURIComponent(name)}%`;
+            query.andWhere('(student.firstName ILIKE :keyword OR student.lastName ILIKE :keyword OR student.phoneNumber ILIKE :keyword)', { keyword });
         }
         const students = await query.getMany();
         let studentsWithRecalculatedData = students.map((student) => this.recalculateStudentFinancials(student));

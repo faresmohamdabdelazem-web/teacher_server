@@ -53,10 +53,12 @@ findAll(
    @GetSignedUser() user: any,
   @Query('branchId') branchId?: string,
   @Query('sectionId') sectionId?: string,
+  @Query('phoneNumber') phoneNumber?: string,
+  @Query('name') name?: string,
   @Query('isLate') isLate?: string,
 
 ) {
-  return this.studentService.findAll(branchId, sectionId, isLate,user);
+  return this.studentService.findAll(branchId, sectionId, isLate,phoneNumber,name,user);
 }
   
 

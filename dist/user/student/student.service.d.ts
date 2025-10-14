@@ -29,7 +29,7 @@ export declare class StudentService {
     }>;
     logPresence(studentId: string, lessonName: string): Promise<Student>;
     logAbsence(studentId: string, lessonName: string): Promise<Student>;
-    findAll(branchId?: string, sectionId?: string, isLate?: string, user?: any): Promise<{
+    findAll(branchId?: string, sectionId?: string, isLate?: string, phoneNumber?: string, name?: string, user?: any): Promise<{
         students: Student[];
     }>;
     findAllName(user?: any): Promise<{

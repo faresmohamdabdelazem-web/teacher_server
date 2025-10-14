@@ -65,7 +65,6 @@ async create(
   userId: string,
   userRole: string,
 ): Promise<{ lesson: Lesson }> {
-  // ✅ السماح فقط للمعلمين والمساعدين والمديرين
   if (
     userRole !== UserRole.TEACHER &&
     userRole !== UserRole.ASSISTANT &&
@@ -76,18 +75,15 @@ async create(
     );
   }
 
-  // ✅ جلب بيانات المستخدم
   const user = await this.userService.findOneById(userId);
   if (!user) {
     throw new NotFoundException('User not found');
   }
 
-  // ✅ تحقق من وجود القسم
   if (!createLessonDto['sectionId']) {
     throw new BadRequestException('Section ID is required to create a lesson');
   }
 
-  // ✅ جلب بيانات القسم والفروع المرتبطة به
   const section = await this.sectionRepository.findOne({
     where: { id: createLessonDto['sectionId'] },
     relations: ['branches'],
@@ -97,9 +93,7 @@ async create(
     throw new NotFoundException('Section not found');
   }
 
-  // ✅ تحقق من الفرع في حالة المستخدم "مساعد"
   if (userRole === UserRole.ASSISTANT) {
-    // جلب بيانات المساعد (للتأكد من الفرع)
     const assistant = await this.assistantRepository.findOne({
       where: { userId: user.userId },
       relations: ['branch'],
@@ -109,7 +103,6 @@ async create(
       throw new ForbiddenException('Assistant has no assigned branch');
     }
 
-    // جلب جميع فروع القسم
     const sectionBranchIds = section.branches.map((b) => b.id);
     const isInSameBranch = sectionBranchIds.includes(assistant.branch.id);
 
@@ -120,7 +113,6 @@ async create(
     }
   }
 
-  // ✅ تجهيز الوقت والتاريخ
   if (createLessonDto.startTime) {
     const startTime = new Date(createLessonDto.startTime);
     createLessonDto['attendanceStartTime'] = new Date(
@@ -130,18 +122,24 @@ async create(
 
   if (createLessonDto.scheduledDate) {
     const scheduledDate = new Date(createLessonDto.scheduledDate);
+    const now = new Date();
+
+    // ✅ تحقق أن التاريخ مش قبل دلوقتي
+    if (scheduledDate < now) {
+      throw new BadRequestException(
+        'لا يمكنك انشاء محاضرة في وقت في الماضي',
+      );
+    }
+
     createLessonDto.scheduledDate = scheduledDate.toISOString() as any;
   }
 
-  // ✅ إنشاء الكيان
   const lesson = this.lessonRepository.create({
     ...createLessonDto,
     status: LessonStatus.SCHEDULED,
   });
 
-  // ✅ حفظ المحاضرة
   const savedLesson = await this.lessonRepository.save(lesson);
-  console.log('✅ Lesson created:', savedLesson);
 
   // ✅ إنشاء سجلات الحضور التلقائية
   if (savedLesson && savedLesson.sectionId) {
@@ -161,12 +159,12 @@ async create(
       );
 
       await this.attendanceRepository.save(attendanceRecords);
-      console.log('✅ Attendance records created:', attendanceRecords.length);
     }
   }
 
   return { lesson: savedLesson };
 }
+
 
 
 
@@ -1239,7 +1237,7 @@ async getLessonAttendance(
     },
   });
 
-  // ✅ تأكيد الترتيب (الحاضرين أولاً)
+ 
   attendance.sort((a, b) => {
     if (
       a.status === AttendanceStatus.PRESENT &&

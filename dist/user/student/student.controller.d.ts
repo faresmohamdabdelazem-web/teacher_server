@@ -11,7 +11,7 @@ export declare class StudentController {
         message: string;
         student: import("./student.entity").Student;
     }>;
-    findAll(user: any, branchId?: string, sectionId?: string, isLate?: string): Promise<{
+    findAll(user: any, branchId?: string, sectionId?: string, phoneNumber?: string, name?: string, isLate?: string): Promise<{
         students: import("./student.entity").Student[];
     }>;
     findAllName(user: any): Promise<{
