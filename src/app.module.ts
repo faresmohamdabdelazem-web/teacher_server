@@ -6,8 +6,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { MailModule } from './mail/mail.module';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { join } from 'path';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { AssetsModule } from './assets/assets.module';
 import { NotificationModule } from './notification/notification.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -31,8 +29,11 @@ import { RevenueModule } from './revenues/revenue.module';
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
-        synchronize: true,
-        ssl: false,
+        synchronize: false,
+        ssl: true,
+        extra: {
+          ssl: { rejectUnauthorized: false },
+        },
       }),
     }),
     AuthModule,
@@ -45,7 +46,9 @@ import { RevenueModule } from './revenues/revenue.module';
     MailModule,
     MailerModule.forRoot({
       transport: {
-        service: process.env.MAIL_HOST,
+        host: process.env.MAIL_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.MAIL_PORT || '465'),
+        secure: (process.env.MAIL_SECURE || 'true') === 'true',
         auth: {
           user: process.env.USER_EMAIL,
           pass: process.env.EMAIL_PASS,
@@ -53,10 +56,6 @@ import { RevenueModule } from './revenues/revenue.module';
       },
       defaults: {
         from: `"no-reply@hatly.tech`,
-      },
-      template: {
-        dir: join(__dirname, 'mail', 'templates'),
-        adapter: new HandlebarsAdapter(),
       },
     }),
     AssetsModule,

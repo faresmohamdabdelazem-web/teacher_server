@@ -190,6 +190,7 @@ let StudentService = class StudentService {
         if (!student) {
             throw new common_1.NotFoundException('هذا الطالب غير موجود');
         }
+        student.installments.sort((a, b) => a.installmentNumber - b.installmentNumber);
         const nextDueInstallment = student.installments.find((inst) => inst.remainingAmount > 0);
         if (!nextDueInstallment && dto.paymentType === pay_installment_dto_1.PaymentType.DOWN_PAYMENT) {
             throw new common_1.BadRequestException(`✅ لقد انتهيت من جميع الأقساط بالفعل. لا يمكنك دفع دفعة مقدمة بعد الآن. 
@@ -266,9 +267,9 @@ let StudentService = class StudentService {
             installmentId: targetInstallment.id,
             branchId: student.branch.id,
         });
-        await this.installmentRepository.save(targetInstallment);
         let message = `تم دفع ${dto.amount} جنيه بنجاح من القسط رقم ${dto.installmentNumber}.`;
         if (targetInstallment.remainingAmount <= 0) {
+            targetInstallment.status = installment_entity_1.InstallmentStatus.PAID;
             if (targetInstallment.installmentNumber === 0) {
                 await this.installmentService.createMonthlyInstallments(student);
                 student.installmentStage = 1;
@@ -289,6 +290,7 @@ let StudentService = class StudentService {
                 });
             }
         }
+        await this.installmentRepository.save(targetInstallment);
         await this.studentRepository.save(student);
         return {
             message,

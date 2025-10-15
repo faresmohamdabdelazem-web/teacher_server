@@ -5,6 +5,8 @@ import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from '../src/interceptors/response.interceptor';
 import { HttpExceptionFilter } from '../src/filters/http-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import helmet from 'helmet';
+import compression from 'compression';
 
 let app: NestExpressApplication;
 
@@ -16,6 +18,8 @@ async function bootstrap() {
 
     app.useBodyParser('json', { limit: '15mb' });
     app.use(cookieParser());
+    app.use(helmet());
+    app.use(compression());
 
     app.useGlobalPipes(
       new ValidationPipe({
@@ -24,9 +28,18 @@ async function bootstrap() {
       }),
     );
 
+    const corsOrigins = (process.env.FRONTEND_ORIGINS || process.env.FRONTEND_URL || '')
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean);
     app.enableCors({
       credentials: true,
-      origin: '*',
+      origin: (origin, callback) => {
+        if (!origin || corsOrigins.length === 0 || corsOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS'));
+      },
     });
 
     app.useGlobalFilters(new HttpExceptionFilter());

@@ -5,7 +5,7 @@ import { RevenueService } from './revenue.service';
 import { RevenueController } from './revenue.controller';
 import { Section } from 'src/section/entities/section.entity';
 import { Student } from 'src/user/student/student.entity';
-import { Installment } from 'src/installment/entities/installment.entity';
+import { Installment } from 'src/Installment/entities/installment.entity';
 import { Branch } from 'src/branch/entities/branch.entity';
 
 @Module({

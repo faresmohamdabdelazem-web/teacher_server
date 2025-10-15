@@ -239,7 +239,7 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
 }
 
 
-  async payInstallment(
+ async payInstallment(
     studentId: string,
     dto: PayInstallmentDto,
   ): Promise<{ message: string; student: Student }> {
@@ -251,6 +251,10 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
     if (!student) {
       throw new NotFoundException('هذا الطالب غير موجود');
     }
+
+    
+    student.installments.sort((a, b) => a.installmentNumber - b.installmentNumber);
+    
 
     const nextDueInstallment = student.installments.find(
       (inst) => inst.remainingAmount > 0,
@@ -359,11 +363,12 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
       branchId: student.branch.id,
     });
 
-    await this.installmentRepository.save(targetInstallment);
-
     let message = `تم دفع ${dto.amount} جنيه بنجاح من القسط رقم ${dto.installmentNumber}.`;
 
     if (targetInstallment.remainingAmount <= 0) {
+      // ** تحسين إضافي: تحديث حالة القسط إلى "مدفوع" **
+      targetInstallment.status = InstallmentStatus.PAID;
+
       if (targetInstallment.installmentNumber === 0) {
         await this.installmentService.createMonthlyInstallments(student);
         student.installmentStage = 1;
@@ -383,12 +388,14 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
         });
       }
     }
-
+    
+    // حفظ التغييرات في القسط والطالب في قاعدة البيانات
+    await this.installmentRepository.save(targetInstallment);
     await this.studentRepository.save(student);
 
     return {
       message,
-      student: await this.findOne(student.id),
+      student: await this.findOne(student.id), // تأكد من وجود دالة findOne في الخدمة
     };
   }
 
