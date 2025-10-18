@@ -89,11 +89,16 @@ export class RevenueService {
 async getRevenueSummary(
   branchId?: string,
   sectionId?: string,
+  startDate?: string,
+  endDate?: string,
+  month?: number,
+  year?: string,
 ): Promise<{
   students: {
     id: string;
     name: string;
-    downPayment: number;
+    remainingBalance: number;
+    paidAmount: number;
     completedInstallments: number;
   }[];
   totalBranchesRevenue: number;
@@ -105,53 +110,84 @@ async getRevenueSummary(
     hospitality: number;
   };
   totalStudents: number;
+  branchesRemainingBalance: {
+    [branchName: string]: number;
+  };
+  filterPeriod?: {
+    startDate?: string;
+    endDate?: string;
+    month?: string;
+    year?: string;
+  };
 }> {
-  // ✅ تحقق من وجود الفرع لو مبعوت
+  // ✅ تحديد فترة البحث
+  if (month && year) {
+    const start = new Date(Number(year), Number(month) - 1, 1);
+    const end = new Date(Number(year), Number(month), 0, 23, 59, 59);
+    startDate = start.toISOString();
+    endDate = end.toISOString();
+  }
+
+  // ✅ تحقق من وجود الفرع لو تم تمريره
   if (branchId) {
     const branchExists = await this.branchRepository.findOneBy({ id: branchId });
     if (!branchExists)
       throw new NotFoundException(`Branch with ID ${branchId} not found`);
   }
 
-  // ✅ الفلترة الديناميكية للطلبة (بالفرع والسكشن)
+  // ✅ جلب الطلاب (حسب الفرع/القسم)
   const studentQuery = this.studentRepository
     .createQueryBuilder('student')
     .leftJoinAndSelect('student.branch', 'branch')
     .leftJoinAndSelect('student.section', 'section')
     .leftJoinAndSelect('student.installments', 'installments');
 
-  if (branchId) {
+  if (branchId)
     studentQuery.andWhere('student.branchId = :branchId', { branchId });
-  }
 
   if (sectionId) {
     const keyword = decodeURIComponent(sectionId).trim();
-    studentQuery.andWhere('section.name ILIKE :keyword', { keyword: `%${keyword}%` });
+    studentQuery.andWhere('section.name ILIKE :keyword', {
+      keyword: `%${keyword}%`,
+    });
   }
 
   const studentsData = await studentQuery.getMany();
 
-  // ✅ تجهيز بيانات الطلبة
   const students = studentsData.map((s) => ({
     id: s.id,
     name: `${s.firstName} ${s.lastName}`,
-    downPayment: s.downPayment ?? 0,
+    remainingBalance: s.remainingBalance ?? 0,
+    paidAmount: s.paidAmount ?? 0,
     completedInstallments:
       s.installments?.filter((i) => i.remainingAmount === 0).length || 0,
   }));
 
-  // ✅ حساب الإيرادات للفروع
-  const allBranches = await this.branchRepository.find();
-  const branchRevenues = await this.revenueRepository
+  // ✅ فلترة الإيرادات بالتاريخ أو الشهر
+  const revenueQuery = this.revenueRepository
     .createQueryBuilder('revenue')
     .select('revenue.branchId', 'branchId')
     .addSelect('SUM(revenue.amount)', 'total')
-    .groupBy('revenue.branchId')
-    .getRawMany();
+    .groupBy('revenue.branchId');
+
+  if (branchId)
+    revenueQuery.andWhere('revenue.branchId = :branchId', { branchId });
+
+  if (startDate && endDate) {
+    revenueQuery.andWhere('revenue.createdAt BETWEEN :startDate AND :endDate', {
+      startDate,
+      endDate,
+    });
+  }
+
+  const branchRevenues = await revenueQuery.getRawMany();
+
+  // ✅ تحميل الفروع
+  const allBranches = await this.branchRepository.find();
+  const branchMap = new Map(allBranches.map((b) => [b.id, b]));
 
   let alexTotalRevenue = 0;
   let cairoTotalRevenue = 0;
-  const branchMap = new Map(allBranches.map((b) => [b.id, b]));
 
   for (const revenue of branchRevenues) {
     const branch = branchMap.get(revenue.branchId);
@@ -165,43 +201,68 @@ async getRevenueSummary(
 
   const totalBranchesRevenue = alexTotalRevenue + cairoTotalRevenue;
 
-  // ✅ حساب أعداد السكاشن بناءً على الفرع فقط (مش السكشن)
+  // ✅ حساب الباقي لكل فرع بالشكل الجديد
+  const remainingBalanceQuery = this.studentRepository
+    .createQueryBuilder('student')
+    .select('student.branchId', 'branchId')
+    .addSelect('SUM(student.remainingBalance)', 'totalRemaining')
+    .groupBy('student.branchId');
+
+  if (branchId)
+    remainingBalanceQuery.andWhere('student.branchId = :branchId', { branchId });
+
+  const remainingBalanceData = await remainingBalanceQuery.getRawMany();
+
+  const branchesRemainingBalance: Record<string, number> = {};
+  let totalRemainingAllBranches = 0;
+
+  for (const r of remainingBalanceData) {
+    const branch = branchMap.get(r.branchId);
+    const branchName =
+      branch?.nameAr?.includes('اسكندرية')
+        ? 'alexandria'
+        : branch?.nameAr?.includes('قاهرة')
+        ? 'cairo'
+        : branch?.nameAr || 'unknown';
+
+    const total = parseFloat(r.totalRemaining) || 0;
+    branchesRemainingBalance[branchName] =
+      (branchesRemainingBalance[branchName] || 0) + total;
+    totalRemainingAllBranches += total;
+  }
+
+  branchesRemainingBalance['total'] = totalRemainingAllBranches;
+
+  // ✅ إحصاءات الأقسام
   const sectionCountsQuery = this.studentRepository
     .createQueryBuilder('student')
     .leftJoin('student.section', 'section')
     .select('section.name', 'sectionName')
     .addSelect('COUNT(student.id)', 'count');
 
-  if (branchId) {
+  if (branchId)
     sectionCountsQuery.andWhere('student.branchId = :branchId', { branchId });
-  }
 
-  // ❌ متضيفش فلتر sectionId هنا علشان الأرقام تعتمد على الفرع فقط
   sectionCountsQuery.groupBy('section.name');
   const sectionCounts = await sectionCountsQuery.getRawMany();
 
-  const totalSectionsStudents = {
-    nursing: 0,
-    radiology: 0,
-    hospitality: 0,
-  };
+  const totalSectionsStudents = { nursing: 0, radiology: 0, hospitality: 0 };
 
   for (const item of sectionCounts) {
     const name = item.sectionName?.trim() || '';
     const count = parseInt(item.count, 10) || 0;
-
-    if (name.includes('Nursing Department')) totalSectionsStudents.nursing += count;
-    else if (name.includes('Radiology Department') || name.includes('Laboratory'))
+    if (name.includes('Nursing')) totalSectionsStudents.nursing += count;
+    else if (name.includes('Radiology') || name.includes('Laboratory'))
       totalSectionsStudents.radiology += count;
-    else if (name.includes('Hospitality Department') || name.includes('Aviation'))
+    else if (name.includes('Hospitality') || name.includes('Aviation'))
       totalSectionsStudents.hospitality += count;
   }
 
-  // ✅ حساب إجمالي الطلاب لنفس الفرع فقط (مش السكشن)
   const totalStudents = await this.studentRepository.count({
     where: branchId ? { branch: { id: branchId } } : {},
   });
 
+  // ✅ النتيجة النهائية
   return {
     students,
     totalBranchesRevenue,
@@ -209,8 +270,13 @@ async getRevenueSummary(
     cairoTotalRevenue,
     totalStudents,
     totalSectionsStudents,
+    branchesRemainingBalance,
+    
   };
 }
+
+
+
 
 
 

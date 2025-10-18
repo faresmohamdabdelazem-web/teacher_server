@@ -56,7 +56,10 @@ export class LessonAttendance {
   lesson: Lesson;
 
   // ✅👇 وتم تصحيح هذا الجزء أيضًا
-  @ManyToOne(() => Student, (student) => student.attendances)
+  @ManyToOne(() => Student, (student) => student.attendances,{
+  onDelete: 'CASCADE', // أو SET NULL حسب احتياجك
+  onUpdate: 'CASCADE',
+})
   @JoinColumn({ name: 'studentId' })
   student: Student;
 }

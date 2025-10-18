@@ -26,7 +26,7 @@ import { SectionModule } from 'src/section/section.module';
 import { Section } from 'src/section/entities/section.entity';
 import { BranchModule } from 'src/branch/branch.module';
 import { RevenueModule } from 'src/revenues/revenue.module';
-
+import { Revenue } from 'src/revenues/entities/revenues.entity';
 // ✅ استيراد LessonModule
 import { LessonModule } from 'src/lesson/lesson.module';
 
@@ -40,6 +40,7 @@ import { LessonModule } from 'src/lesson/lesson.module';
       Branch,
       Section,
       Lesson,
+      Revenue,
       LessonAttendance,
       Installment,
     ]),

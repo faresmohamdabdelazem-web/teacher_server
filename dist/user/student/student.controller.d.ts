@@ -25,7 +25,9 @@ export declare class StudentController {
     findByPhoneNumber(phoneNumber: string): Promise<import("./student.entity").Student>;
     findByManualEntryId(manualEntryId: string): Promise<import("./student.entity").Student>;
     update(id: string, updateStudentDto: Partial<CreateStudentDto>): Promise<import("./student.entity").Student>;
-    remove(id: string): Promise<void>;
+    remove(id: string): Promise<{
+        message: string;
+    }>;
     getStudentTeachers(id: string): Promise<import("../teacher/teacher.entity").Teacher[]>;
     getStudentLessons(id: string): Promise<import("../../lesson/entities/lesson.entity").Lesson[]>;
     sendBarcodeToPhone(body: {

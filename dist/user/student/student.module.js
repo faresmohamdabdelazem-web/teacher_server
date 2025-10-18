@@ -24,13 +24,14 @@ const branch_entity_1 = require("../../branch/entities/branch.entity");
 const revenue_module_1 = require("../../revenues/revenue.module");
 const installment_entity_1 = require("../../Installment/entities/installment.entity");
 const assistant_1 = require("../assistant");
+const revenues_entity_1 = require("../../revenues/entities/revenues.entity");
 let StudentModule = class StudentModule {
 };
 exports.StudentModule = StudentModule;
 exports.StudentModule = StudentModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([student_entity_1.Student, section_entity_1.Section, branch_entity_1.Branch, installment_entity_1.Installment, lesson_attendance_entity_1.LessonAttendance, assistant_1.Assistant]),
+            typeorm_1.TypeOrmModule.forFeature([student_entity_1.Student, section_entity_1.Section, branch_entity_1.Branch, installment_entity_1.Installment, lesson_attendance_entity_1.LessonAttendance, assistant_1.Assistant, revenues_entity_1.Revenue]),
             section_module_1.SectionModule,
             branch_module_1.BranchModule,
             revenue_module_1.RevenueModule,

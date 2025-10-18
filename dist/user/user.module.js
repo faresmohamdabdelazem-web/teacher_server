@@ -35,6 +35,7 @@ const section_module_1 = require("../section/section.module");
 const section_entity_1 = require("../section/entities/section.entity");
 const branch_module_1 = require("../branch/branch.module");
 const revenue_module_1 = require("../revenues/revenue.module");
+const revenues_entity_1 = require("../revenues/entities/revenues.entity");
 const lesson_module_1 = require("../lesson/lesson.module");
 let UserModule = class UserModule {
 };
@@ -50,6 +51,7 @@ exports.UserModule = UserModule = __decorate([
                 branch_entity_1.Branch,
                 section_entity_1.Section,
                 lesson_entity_1.Lesson,
+                revenues_entity_1.Revenue,
                 lesson_attendance_entity_1.LessonAttendance,
                 installment_entity_1.Installment,
             ]),

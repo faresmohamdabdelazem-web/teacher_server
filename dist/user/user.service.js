@@ -34,22 +34,33 @@ let UserService = class UserService {
     }
     async create(createUserDto) {
         const transformedDto = (0, class_transformer_1.plainToClass)(create_user_dto_1.CreateUserDto, createUserDto);
-        const existingUser = await this.userRepository.findOne({
+        if (transformedDto.role === user_role_enum_1.UserRole.ADMIN) {
+            const existingAdmin = await this.userRepository.findOne({
+                where: { role: user_role_enum_1.UserRole.ADMIN },
+            });
+            if (existingAdmin) {
+                throw new common_1.ConflictException('يوجد بالفعل حساب مدير (Admin) واحد في النظام');
+            }
+        }
+        const existingByName = await this.userRepository.findOne({
             where: {
                 firstName: transformedDto.firstName,
                 lastName: transformedDto.lastName,
             },
         });
-        if (existingUser) {
-            throw new common_1.ConflictException('اسم المعلم بالكامل موجود من فضلك غير الاسم الاول او الاسم الثاني');
+        if (existingByName) {
+            throw new common_1.ConflictException('اسم المستخدم بالكامل موجود بالفعل، من فضلك غيّر الاسم الأول أو الاسم الأخير');
+        }
+        if (transformedDto.email) {
+            const existingByEmail = await this.userRepository.findOne({
+                where: { email: transformedDto.email },
+            });
+            if (existingByEmail) {
+                throw new common_1.ConflictException(`البريد الإلكتروني '${transformedDto.email}' مستخدم بالفعل`);
+            }
         }
         const user = this.userRepository.create(transformedDto);
-        const savedUser = await this.userRepository.save(user).catch((error) => {
-            if (error.detail?.includes(user.email) && error.code === '23505') {
-                throw new common_1.ConflictException(`Email '${user.email}' already exists`);
-            }
-            throw new common_1.InternalServerErrorException();
-        });
+        const savedUser = await this.userRepository.save(user);
         if (savedUser.role === user_role_enum_1.UserRole.TEACHER) {
             await this.teacherService.createWithUser(savedUser);
         }

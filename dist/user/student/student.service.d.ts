@@ -10,6 +10,7 @@ import { Section } from 'src/section/entities/section.entity';
 import { Teacher } from '../teacher/teacher.entity';
 import { Lesson } from 'src/lesson/entities/lesson.entity';
 import { RevenueService } from 'src/revenues/revenue.service';
+import { Revenue } from 'src/revenues/entities/revenues.entity';
 import { Assistant } from '../assistant/assistant.entity';
 export declare class StudentService {
     private studentRepository;
@@ -17,12 +18,14 @@ export declare class StudentService {
     private branchRepository;
     private sectionRepository;
     private attendanceRepository;
+    private RevenueRepositry;
     private assistantRepository;
     private installmentService;
     private readonly revenueService;
-    constructor(studentRepository: Repository<Student>, installmentRepository: Repository<Installment>, branchRepository: Repository<Branch>, sectionRepository: Repository<Section>, attendanceRepository: Repository<LessonAttendance>, assistantRepository: Repository<Assistant>, installmentService: InstallmentService, revenueService: RevenueService);
+    constructor(studentRepository: Repository<Student>, installmentRepository: Repository<Installment>, branchRepository: Repository<Branch>, sectionRepository: Repository<Section>, attendanceRepository: Repository<LessonAttendance>, RevenueRepositry: Repository<Revenue>, assistantRepository: Repository<Assistant>, installmentService: InstallmentService, revenueService: RevenueService);
     private recalculateStudentFinancials;
     create(createStudentDto: CreateStudentDto, user: any): Promise<Student>;
+    private getMonthNameFromInstallmentNumber;
     payInstallment(studentId: string, dto: PayInstallmentDto): Promise<{
         message: string;
         student: Student;
@@ -43,7 +46,9 @@ export declare class StudentService {
     findByPhoneNumber(phoneNumber: string): Promise<Student>;
     findByManualEntryId(manualEntryId: string): Promise<Student>;
     update(id: string, updateStudentDto: Partial<CreateStudentDto>): Promise<Student>;
-    remove(id: string): Promise<void>;
+    remove(id: string): Promise<{
+        message: string;
+    }>;
     getStudentTeachers(id: string): Promise<Teacher[]>;
     getStudentLessons(id: string): Promise<Lesson[]>;
 }

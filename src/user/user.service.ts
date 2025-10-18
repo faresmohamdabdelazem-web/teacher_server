@@ -42,31 +42,45 @@ export class UserService {
 async create(createUserDto: CreateUserDto) {
   const transformedDto = plainToClass(CreateUserDto, createUserDto);
 
-  // ✅ تحقق من عدم تكرار الاسم الأول والأخير معًا
-  const existingUser = await this.userRepository.findOne({
+  // ✅ تحقق من عدم وجود Admin آخر
+  if (transformedDto.role === UserRole.ADMIN) {
+    const existingAdmin = await this.userRepository.findOne({
+      where: { role: UserRole.ADMIN },
+    });
+    if (existingAdmin) {
+      throw new ConflictException('يوجد بالفعل حساب مدير (Admin) واحد في النظام');
+    }
+  }
+
+  // ✅ تحقق من تكرار الاسم الكامل
+  const existingByName = await this.userRepository.findOne({
     where: {
       firstName: transformedDto.firstName,
       lastName: transformedDto.lastName,
     },
   });
 
-  if (existingUser) {
+  if (existingByName) {
     throw new ConflictException(
-      'اسم المعلم بالكامل موجود من فضلك غير الاسم الاول او الاسم الثاني',
+      'اسم المستخدم بالكامل موجود بالفعل، من فضلك غيّر الاسم الأول أو الاسم الأخير',
     );
   }
 
-  // إنشاء المستخدم
-  const user = this.userRepository.create(transformedDto);
-
-  const savedUser = await this.userRepository.save(user).catch((error) => {
-    if (error.detail?.includes(user.email) && error.code === '23505') {
-      throw new ConflictException(`Email '${user.email}' already exists`);
+  // ✅ تحقق من تكرار البريد الإلكتروني (اختياري)
+  if (transformedDto.email) {
+    const existingByEmail = await this.userRepository.findOne({
+      where: { email: transformedDto.email },
+    });
+    if (existingByEmail) {
+      throw new ConflictException(`البريد الإلكتروني '${transformedDto.email}' مستخدم بالفعل`);
     }
-    throw new InternalServerErrorException();
-  });
+  }
 
-  // إنشاء Teacher أو Assistant لو الدور ينطبق
+  // ✅ إنشاء المستخدم
+  const user = this.userRepository.create(transformedDto);
+  const savedUser = await this.userRepository.save(user);
+
+  // ✅ إنشاء Teacher أو Assistant لو الدور ينطبق
   if (savedUser.role === UserRole.TEACHER) {
     await this.teacherService.createWithUser(savedUser);
   } else if (savedUser.role === UserRole.ASSISTANT) {
@@ -75,6 +89,7 @@ async create(createUserDto: CreateUserDto) {
 
   return savedUser;
 }
+
 
 
  

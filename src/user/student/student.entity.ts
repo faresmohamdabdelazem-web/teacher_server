@@ -98,16 +98,11 @@ branchId: string;
   @Column({ nullable: true })
   receiptNumber?: string;
 
+  // 🔹 REMOVED: paymentHistory is no longer here
+  /*
   @Column({ type: 'jsonb', default: [] })
-  paymentHistory: {
-    amount: number;
-    paidAt: Date;
-    cashReceiver: string;
-    receiptNumber: string;
-    installmentNumber: number;
-    paymentType: PaymentType;
-    throughPerson:string
-  }[];
+  paymentHistory: { ... }[];
+  */
 
   isLate?: boolean;
 

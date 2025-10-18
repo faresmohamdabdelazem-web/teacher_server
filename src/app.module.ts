@@ -29,7 +29,7 @@ import { RevenueModule } from './revenues/revenue.module';
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
-        synchronize: false,
+        synchronize: true,
         ssl: true,
         extra: {
           ssl: { rejectUnauthorized: false },

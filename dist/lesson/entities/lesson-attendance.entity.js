@@ -69,7 +69,10 @@ __decorate([
     __metadata("design:type", lesson_entity_1.Lesson)
 ], LessonAttendance.prototype, "lesson", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => student_entity_1.Student, (student) => student.attendances),
+    (0, typeorm_1.ManyToOne)(() => student_entity_1.Student, (student) => student.attendances, {
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+    }),
     (0, typeorm_1.JoinColumn)({ name: 'studentId' }),
     __metadata("design:type", student_entity_1.Student)
 ], LessonAttendance.prototype, "student", void 0);

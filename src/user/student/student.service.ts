@@ -28,8 +28,9 @@ import { RevenueService } from 'src/revenues/revenue.service';
 import { RevenueSource } from 'src/revenues/entities/revenues.entity';
 import { UserRole } from '../user.role.enum';
 import { UserPayload } from '../userPayload.type';
+import { Revenue } from 'src/revenues/entities/revenues.entity';
+import { Assistant } from '../assistant/assistant.entity'
 
-import  {Assistant} from '../assistant/assistant.entity'
 @Injectable()
 export class StudentService {
   constructor(
@@ -43,13 +44,15 @@ export class StudentService {
     private sectionRepository: Repository<Section>,
     @InjectRepository(LessonAttendance)
     private attendanceRepository: Repository<LessonAttendance>,
- 
+    @InjectRepository(Revenue)
+    private RevenueRepositry: Repository<Revenue>,
 
-   @InjectRepository(Assistant)
+
+    @InjectRepository(Assistant)
     private assistantRepository: Repository<Assistant>,
     private installmentService: InstallmentService,
     private readonly revenueService: RevenueService,
-  ) {}
+  ) { }
 
   private recalculateStudentFinancials(student: Student): Student {
     const today = new Date();
@@ -74,172 +77,142 @@ export class StudentService {
     return student;
   }
 
-async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
-  const { branchId, sectionId, phoneNumber, firstName, lastName } = createStudentDto;
+  async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
+    const { branchId, sectionId, phoneNumber, firstName, lastName } = createStudentDto;
 
-  // ✅ لو المستخدم Assistant اتحقق من الفرع
-  if (user.role === UserRole.ASSISTANT) {
-    const assistant = await this.assistantRepository.findOne({
-      where: { user: { userId: user.id } },
-      relations: ['branch'],
-    });
-
-    if (!assistant) {
-      throw new ForbiddenException('Assistant not found');
+    if (user.role === UserRole.ASSISTANT) {
+      const assistant = await this.assistantRepository.findOne({
+        where: { user: { userId: user.id } },
+        relations: ['branch'],
+      });
+      if (!assistant) throw new ForbiddenException('Assistant not found');
+      if (assistant.branch.id !== branchId) throw new ForbiddenException('الطلب ليس من نفس فرع المساعد');
     }
 
-    if (assistant.branch.id !== branchId) {
-      throw new ForbiddenException('الطلب ليس من نفس فرع المساعد');
+    if (phoneNumber) {
+      const existingStudentByPhone = await this.studentRepository.findOneBy({ phoneNumber });
+      if (existingStudentByPhone) throw new ConflictException('Student with this phone number already exists');
     }
-  }
 
-  // ✅ تحقق من رقم الهاتف
-  if (phoneNumber) {
-    const existingStudentByPhone = await this.studentRepository.findOneBy({ phoneNumber });
-    if (existingStudentByPhone) {
-      throw new ConflictException('Student with this phone number already exists');
+    const existingStudentByName = await this.studentRepository.findOne({ where: { firstName, lastName } });
+    if (existingStudentByName) throw new ConflictException(`A student with the name "${firstName} ${lastName}" already exists`);
+
+    const branch = await this.branchRepository.findOne({ where: { id: branchId }, relations: ['sections'] });
+    if (!branch) throw new BadRequestException(`Branch with ID "${branchId}" not found`);
+
+    const section = await this.sectionRepository.findOneBy({ id: sectionId });
+    if (!section) throw new BadRequestException(`Section with ID "${sectionId}" not found`);
+
+    const isSectionInBranch = branch.sections.some((s) => s.id === section.id);
+    if (!isSectionInBranch) throw new BadRequestException(`Section "${section.name}" is not available in branch "${branch.name}"`);
+
+    const lastStudent = await this.studentRepository.findOne({ where: {}, order: { createdAt: 'DESC' } });
+    let newSequenceNumber = 1;
+    if (lastStudent && lastStudent.id.includes('-')) {
+      const lastIdParts = lastStudent.id.split('-');
+      const lastNumber = parseInt(lastIdParts[lastIdParts.length - 1], 10);
+      if (!isNaN(lastNumber)) newSequenceNumber = lastNumber + 1;
     }
-  }
 
-  // ✅ تحقق من الاسم
-  const existingStudentByName = await this.studentRepository.findOne({
-    where: { firstName, lastName },
-  });
-  if (existingStudentByName) {
-    throw new ConflictException(`A student with the name "${firstName} ${lastName}" already exists`);
-  }
+    const paddedSequence = newSequenceNumber.toString().padStart(6, '0');
+    const branchInitial = branch.name.charAt(0).toUpperCase();
+    const sectionInitial = section.name.charAt(0).toUpperCase();
+    const generatedId = `${branchInitial}${sectionInitial}-${paddedSequence}`;
 
-  // ✅ تحقق من الفرع
-  const branch = await this.branchRepository.findOne({
-    where: { id: branchId },
-    relations: ['sections'],
-  });
-  if (!branch) {
-    throw new BadRequestException(`Branch with ID "${branchId}" not found`);
-  }
+    const existingStudentById = await this.studentRepository.findOneBy({ id: generatedId });
+    if (existingStudentById) throw new ConflictException(`A student with the generated ID "${generatedId}" already exists. Please try again.`);
 
-  // ✅ تحقق من القسم
-  const section = await this.sectionRepository.findOneBy({ id: sectionId });
-  if (!section) {
-    throw new BadRequestException(`Section with ID "${sectionId}" not found`);
-  }
+    const totalAmount = createStudentDto.totalAmount || 0;
+    const downPayment = createStudentDto.downPayment || 0;
+    const paidDownPayment = downPayment - (createStudentDto.remainingDownPayment || 0);
 
-  // ✅ تحقق إن القسم فعلاً داخل الفرع
-  const isSectionInBranch = branch.sections.some((s) => s.id === section.id);
-  if (!isSectionInBranch) {
-    throw new BadRequestException(
-      `Section "${section.name}" is not available in branch "${branch.name}"`,
-    );
-  }
-
-  // ✅ إنشاء ID جديد
-  const lastStudent = await this.studentRepository.findOne({
-    where: {},
-    order: { createdAt: 'DESC' },
-  });
-
-  let newSequenceNumber = 1;
-  if (lastStudent && lastStudent.id.includes('-')) {
-    const lastIdParts = lastStudent.id.split('-');
-    const lastNumber = parseInt(lastIdParts[lastIdParts.length - 1], 10);
-    if (!isNaN(lastNumber)) {
-      newSequenceNumber = lastNumber + 1;
+    if (paidDownPayment < 0 || paidDownPayment > downPayment) {
+      throw new BadRequestException('Paid down payment is invalid');
     }
-  }
 
-  const paddedSequence = newSequenceNumber.toString().padStart(6, '0');
-  const branchInitial = branch.name.charAt(0).toUpperCase();
-  const sectionInitial = section.name.charAt(0).toUpperCase();
-  const generatedId = `${branchInitial}${sectionInitial}-${paddedSequence}`;
+    const studentData = {
+      ...createStudentDto,
+      id: generatedId,
+      branch,
+      section,
+      totalAmount,
+      downPayment,
+      paidAmount: paidDownPayment,
+      remainingBalance: totalAmount - paidDownPayment,
+      installmentStage: 0,
+      activities: [],
+    };
 
-  const existingStudentById = await this.studentRepository.findOneBy({ id: generatedId });
-  if (existingStudentById) {
-    throw new ConflictException(
-      `A student with the generated ID "${generatedId}" already exists. Please try again.`,
-    );
-  }
+    delete studentData.branchId;
+    delete studentData.sectionId;
 
-  const totalAmount = createStudentDto.totalAmount;
-  const downPayment = createStudentDto.downPayment;
-  const remainingDownPayment = createStudentDto.remainingDownPayment ?? 0;
-  const paidDownPayment = downPayment - remainingDownPayment;
-
-  if (paidDownPayment > downPayment) {
-    throw new BadRequestException('Paid down payment cannot be greater than the required down payment');
-  }
-
-  const paidAmount = paidDownPayment;
-
-  const studentData = {
-    ...createStudentDto,
-    id: generatedId,
-    branch,
-    section,
-    totalAmount,
-    downPayment,
-    remainingDownPayment,
-    paidAmount,
-    remainingBalance: totalAmount - paidAmount,
-    installmentStage: 0,
-    paymentHistory: [],
-    activities: [],
-  };
-
-  delete studentData.branchId;
-  delete studentData.sectionId;
-
-  const student = this.studentRepository.create(studentData);
-
-  student.activities.push({
-    title: 'تم إنشاء حساب الطالب',
-    subTitle: `تم تسجيل الطالب ${student.firstName} ${student.lastName} بنجاح.`,
-    createdAt: new Date(),
-  });
-
-  const savedStudent = await this.studentRepository.save(student);
-
-  // ✅ حفظ الدفعة المقدمة إن وجدت
-  if (paidDownPayment > 0) {
-    savedStudent.paymentHistory.push({
-      amount: paidDownPayment,
-      paidAt: new Date(),
-      cashReceiver: savedStudent.cashReceiver || user.name || 'Admin',
-      receiptNumber: `DP-${Date.now()}`,
-      installmentNumber: 0,
-      paymentType: PaymentType.DOWN_PAYMENT,
-      throughPerson: savedStudent.throughPerson || user.name || 'user',
-    });
-
-    savedStudent.activities.push({
-      title: 'تم دفع دفعة مقدمة',
-      subTitle: `تم استلام مبلغ ${paidDownPayment} جنيه كدفعة مقدمة.`,
+    const student = this.studentRepository.create(studentData);
+    student.activities.push({
+      title: 'تم إنشاء حساب الطالب',
+      subTitle: `تم تسجيل الطالب ${student.firstName} ${student.lastName} بنجاح.`,
       createdAt: new Date(),
     });
 
-    await this.revenueService.create({
-      amount: paidDownPayment,
-      source: RevenueSource.DOWN_PAYMENT,
-      studentId: savedStudent.id,
-      sectionId: savedStudent.section.id,
-      branchId: savedStudent.branch.id,
-    });
+    const savedStudent = await this.studentRepository.save(student);
 
-    await this.studentRepository.save(savedStudent);
+    let initialInstallment: Installment | null = null;
+    if (savedStudent.totalAmount > 0) {
+      if (savedStudent.downPayment > 0) {
+        initialInstallment = await this.installmentService.createInitialInstallment(savedStudent);
+
+        if (paidDownPayment > 0) {
+          initialInstallment.amountPaid = paidDownPayment;
+          initialInstallment.remainingAmount = initialInstallment.amount - paidDownPayment;
+
+          initialInstallment.paymentHistory.push({
+            amount: paidDownPayment,
+            paidAt: new Date(),
+            cashReceiver: savedStudent.cashReceiver || user.name || 'Admin',
+            receiptNumber: savedStudent.receiptNumber || `DP-${Date.now()}`,
+            paymentType: PaymentType.DOWN_PAYMENT,
+            throughPerson: savedStudent.throughPerson || user.name || 'user',
+          });
+
+          await this.installmentRepository.save(initialInstallment);
+
+          savedStudent.activities.push({
+            title: 'تم دفع دفعة مقدمة',
+            subTitle: `تم استلام مبلغ ${paidDownPayment} جنيه كدفعة مقدمة.`,
+            createdAt: new Date(),
+          });
+
+          await this.revenueService.create({
+            amount: paidDownPayment,
+            source: RevenueSource.DOWN_PAYMENT,
+            studentId: savedStudent.id,
+            sectionId: savedStudent.section.id,
+            branchId: savedStudent.branch.id,
+            installmentId: initialInstallment.id,
+          });
+        }
+      }
+
+      const isDownPaymentPaid = initialInstallment ? initialInstallment.remainingAmount <= 0 : false;
+      if (savedStudent.downPayment === 0 || isDownPaymentPaid) {
+        await this.installmentService.createMonthlyInstallments(savedStudent);
+        savedStudent.installmentStage = 1;
+        await this.studentRepository.save(savedStudent);
+      }
+    }
+
+    return this.findOne(savedStudent.id);
   }
 
-  if (savedStudent.remainingDownPayment > 0) {
-    await this.installmentService.createInitialInstallment(savedStudent);
-  } else {
-    await this.installmentService.createMonthlyInstallments(savedStudent);
-    savedStudent.installmentStage = 1;
-    await this.studentRepository.save(savedStudent);
+  private getMonthNameFromInstallmentNumber(installmentNumber: number): string {
+    const months = [
+      'أكتوبر', 'نوفمبر', 'ديسمبر', 'يناير', 'فبراير', 'مارس',
+      'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر',
+    ];
+    const index = (installmentNumber - 1) % 12;
+    return months[index];
   }
 
-  return this.findOne(savedStudent.id);
-}
-
-
- async payInstallment(
+  async payInstallment(
     studentId: string,
     dto: PayInstallmentDto,
   ): Promise<{ message: string; student: Student }> {
@@ -252,45 +225,22 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
       throw new NotFoundException('هذا الطالب غير موجود');
     }
 
-    
     student.installments.sort((a, b) => a.installmentNumber - b.installmentNumber);
-    
 
     const nextDueInstallment = student.installments.find(
       (inst) => inst.remainingAmount > 0,
     );
 
-    if (!nextDueInstallment && dto.paymentType === PaymentType.DOWN_PAYMENT) {
-      throw new BadRequestException(
-        `✅ لقد انتهيت من جميع الأقساط بالفعل. لا يمكنك دفع دفعة مقدمة بعد الآن. 
-يرجى اختيار "جزء من القسط" أو "دفع كامل القسط" إذا كان هناك قسط جديد.`,
-      );
-    }
-
     if (!nextDueInstallment) {
       throw new BadRequestException('جميع الأقساط تم سدادها بالكامل!');
     }
 
-    const months = [
-      'أكتوبر',
-      'نوفمبر',
-      'ديسمبر',
-      'يناير',
-      'فبراير',
-      'مارس',
-      'أبريل',
-      'مايو',
-      'يونيو',
-      'يوليو',
-      'أغسطس',
-      'سبتمبر',
-    ];
-    const nextMonthIndex = (nextDueInstallment.installmentNumber - 1) % 12;
-    const nextMonthName = months[nextMonthIndex];
-
     if (dto.installmentNumber !== nextDueInstallment.installmentNumber) {
+      const nextMonthName = nextDueInstallment.installmentNumber === 0
+        ? 'الدفعة المقدمة'
+        : this.getMonthNameFromInstallmentNumber(nextDueInstallment.installmentNumber);
       throw new BadRequestException(
-        `لا يمكنك دفع هذا القسط الآن. القسط المستحق الحالي هو شهر (${nextMonthName}) بمبلغ ${nextDueInstallment.remainingAmount} جنيه.`,
+        `لا يمكنك دفع هذا القسط الآن. القسط المستحق الحالي هو (${nextMonthName}) بمبلغ ${nextDueInstallment.remainingAmount} جنيه.`
       );
     }
 
@@ -320,18 +270,27 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
         `Data integrity error: Student with ID "${studentId}" does not have a section or branch assigned. Cannot process payment.`,
       );
     }
+
     targetInstallment.amountPaid += dto.amount;
     targetInstallment.remainingAmount -= dto.amount;
 
     student.paidAmount += dto.amount;
     student.remainingBalance -= dto.amount;
+    
 
-    student.paymentHistory.push({
+ if (targetInstallment.installmentNumber === 0) {
+      student.remainingDownPayment -= dto.amount;
+    }
+
+    if (!Array.isArray(targetInstallment.paymentHistory)) {
+        targetInstallment.paymentHistory = [];
+    }
+
+    targetInstallment.paymentHistory.push({
       amount: dto.amount,
       paidAt: new Date(),
       cashReceiver: dto.cashReceiver,
       receiptNumber: dto.receiptNumber,
-      installmentNumber: dto.installmentNumber,
       paymentType: dto.paymentType,
       throughPerson: dto.throughPerson,
     });
@@ -343,7 +302,7 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
     const activitySubTitle =
       targetInstallment.installmentNumber === 0
         ? `تم دفع مبلغ ${dto.amount} جنيه.`
-        : `تم دفع مبلغ ${dto.amount} جنيه للقسط رقم ${dto.installmentNumber}.`;
+        : `تم دفع مبلغ ${dto.amount} جنيه للقسط رقم ${targetInstallment.installmentNumber}.`;
 
     student.activities.push({
       title: activityTitle,
@@ -366,11 +325,18 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
     let message = `تم دفع ${dto.amount} جنيه بنجاح من القسط رقم ${dto.installmentNumber}.`;
 
     if (targetInstallment.remainingAmount <= 0) {
-      // ** تحسين إضافي: تحديث حالة القسط إلى "مدفوع" **
       targetInstallment.status = InstallmentStatus.PAID;
 
       if (targetInstallment.installmentNumber === 0) {
-        await this.installmentService.createMonthlyInstallments(student);
+        // 🔹 --- بداية منطقة الإصلاح --- 🔹
+        // الخطوة 1: استقبل الأقساط الجديدة التي تم إنشاؤها
+        const newMonthlyInstallments = await this.installmentService.createMonthlyInstallments(student);
+        
+        // الخطوة 2: قم بتحديث مصفوفة الأقساط في كائن الطالب الموجود في الذاكرة
+        // هذا يضمن أن عملية الحفظ التالية ستكون على علم بجميع الأقساط
+        student.installments = student.installments.concat(newMonthlyInstallments);
+        // 🔹 --- نهاية منطقة الإصلاح --- 🔹
+        
         student.installmentStage = 1;
         message =
           'تم سداد الدفعة المقدمة بالكامل! تم إنشاء الأقساط الشهرية بنجاح.';
@@ -388,14 +354,16 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
         });
       }
     }
-    
-    // حفظ التغييرات في القسط والطالب في قاعدة البيانات
+
     await this.installmentRepository.save(targetInstallment);
     await this.studentRepository.save(student);
+    if (student.installments && student.installments.length > 0) {
+  student.installments.sort((a, b) => a.installmentNumber - b.installmentNumber);
+}
 
     return {
       message,
-      student: await this.findOne(student.id), // تأكد من وجود دالة findOne في الخدمة
+      student: await this.findOne(student.id),
     };
   }
 
@@ -419,112 +387,109 @@ async create(createStudentDto: CreateStudentDto, user: any): Promise<Student> {
     return this.studentRepository.save(student);
   }
 
-async findAll(
-  branchId?: string,
-  sectionId?: string,
-  isLate?: string,
-  phoneNumber?: string,
-  name?: string,
-  user?: any, // من @GetSignedUser()
-): Promise<{ students: Student[] }> {
-  const query = this.studentRepository
-    .createQueryBuilder('student')
-    .leftJoinAndSelect('student.teachers', 'teachers')
-    .leftJoinAndSelect('student.installments', 'installments')
-    .leftJoinAndSelect('student.branch', 'branch')
-    .leftJoinAndSelect('student.section', 'section')
-    .leftJoinAndSelect('student.attendances', 'attendances')
-    .leftJoinAndSelect('attendances.lesson', 'attendedLesson');
+ async findAll(
+    branchId?: string,
+    sectionId?: string,
+    isLate?: string,
+    phoneNumber?: string,
+    name?: string,
+    user?: any,
+  ): Promise<{ students: Student[] }> {
+    const query = this.studentRepository
+      .createQueryBuilder('student')
+      .leftJoinAndSelect('student.teachers', 'teachers')
+      .leftJoinAndSelect('student.installments', 'installments')
+      .leftJoinAndSelect('student.branch', 'branch')
+      .leftJoinAndSelect('student.section', 'section')
+      .leftJoinAndSelect('student.attendances', 'attendances')
+      .leftJoinAndSelect('attendances.lesson', 'attendedLesson');
 
-  // ✅ الحالة الأولى: المستخدم مساعد ASSISTANT
-  if (user.role === UserRole.ASSISTANT) {
-    const assistant = await this.assistantRepository.findOne({
-      where: { userId: user.id },
-      relations: ['branch'],
-    });
+    if (user.role === UserRole.ASSISTANT) {
+      const assistant = await this.assistantRepository.findOne({
+        where: { userId: user.id },
+        relations: ['branch'],
+      });
 
-    if (!assistant || !assistant.branch?.id) {
-      return { students: [] };
-    }
+      if (!assistant || !assistant.branch?.id) {
+        return { students: [] };
+      }
 
-    query.andWhere('student.branch.id = :branchId', {
-      branchId: assistant.branch.id,
-    });
-  }
-
-  // ✅ الحالة الثانية: المستخدم ADMIN أو غيره
-  else if (user.role === UserRole.ADMIN) {
-    if (branchId) {
-      query.andWhere('student.branch.id = :branchId', { branchId });
-    }
-
-    if (sectionId) {
-      const keyword = decodeURIComponent(sectionId);
-      query.andWhere('section.name ILIKE :keyword', {
-        keyword: `%${keyword}%`,
+      query.andWhere('student.branch.id = :branchId', {
+        branchId: assistant.branch.id,
       });
     }
-  }
+    else if (user.role === UserRole.ADMIN) {
+      if (branchId) {
+        query.andWhere('student.branch.id = :branchId', { branchId });
+      }
 
-if (name) {
-  const keyword = `%${decodeURIComponent(name)}%`;
-  query.andWhere(
-    '(student.firstName ILIKE :keyword OR student.lastName ILIKE :keyword OR student.phoneNumber ILIKE :keyword)',
-    { keyword },
-  );
-}
-
-  // ✅ تنفيذ الاستعلام
-  const students = await query.getMany();
-
-  // ✅ إعادة حساب الحالة المالية لكل طالب
-  let studentsWithRecalculatedData = students.map((student) =>
-    this.recalculateStudentFinancials(student),
-  );
-
-  // ✅ فلترة المتأخرين لو مطلوبة
-  if (isLate === 'true') {
-    studentsWithRecalculatedData = studentsWithRecalculatedData.filter(
-      (student) => student.isLate,
-    );
-  }
-
-  return { students: studentsWithRecalculatedData };
-}
-
-
-
-
- async findAllName(user?: any): Promise<{
-  students: { id: string; firstName: string; lastName: string }[];
-}> {
-  const query = this.studentRepository
-    .createQueryBuilder('student')
-    .select(['student.id', 'student.firstName', 'student.lastName'])
-    .leftJoin('student.branch', 'branch');
-
-  // ✅ لو المستخدم Assistant، نجيب الفرع بتاعه ونفلتر بالفرع
-  if (user.role === UserRole.ASSISTANT) {
-    const assistant = await this.assistantRepository.findOne({
-      where: { userId: user.id },
-      relations: ['branch'],
-    });
-
-    if (!assistant || !assistant.branch?.id) {
-      return { students: [] };
+      if (sectionId) {
+        const keyword = decodeURIComponent(sectionId);
+        query.andWhere('section.name ILIKE :keyword', {
+          keyword: `%${keyword}%`,
+        });
+      }
     }
 
-    query.andWhere('branch.id = :branchId', {
-      branchId: assistant.branch.id,
+    if (name) {
+      const keyword = `%${decodeURIComponent(name)}%`;
+      query.andWhere(
+        '(student.firstName ILIKE :keyword OR student.lastName ILIKE :keyword OR student.phoneNumber ILIKE :keyword)',
+        { keyword },
+      );
+    }
+
+    const students = await query.getMany();
+
+    // ✅ --- بداية التعديل المطلوب --- ✅
+    // نقوم بالمرور على كل طالب بعد جلبه من قاعدة البيانات
+    // لترتيب مصفوفة الأقساط الخاصة به بناءً على رقم القسط
+    students.forEach(student => {
+      if (student.installments && student.installments.length > 0) {
+        student.installments.sort((a, b) => a.installmentNumber - b.installmentNumber);
+      }
     });
+    // ✅ --- نهاية التعديل المطلوب --- ✅
+
+    let studentsWithRecalculatedData = students.map((student) =>
+      this.recalculateStudentFinancials(student),
+    );
+
+    if (isLate === 'true') {
+      studentsWithRecalculatedData = studentsWithRecalculatedData.filter(
+        (student) => student.isLate,
+      );
+    }
+
+    return { students: studentsWithRecalculatedData };
   }
 
-  // ✅ لو المستخدم Admin أو أي Role تاني، نجيب كل الطلاب
-  const students = await query.getMany();
+  async findAllName(user?: any): Promise<{
+    students: { id: string; firstName: string; lastName: string }[];
+  }> {
+    const query = this.studentRepository
+      .createQueryBuilder('student')
+      .select(['student.id', 'student.firstName', 'student.lastName'])
+      .leftJoin('student.branch', 'branch');
 
-  return { students };
-}
+    if (user.role === UserRole.ASSISTANT) {
+      const assistant = await this.assistantRepository.findOne({
+        where: { userId: user.id },
+        relations: ['branch'],
+      });
 
+      if (!assistant || !assistant.branch?.id) {
+        return { students: [] };
+      }
+
+      query.andWhere('branch.id = :branchId', {
+        branchId: assistant.branch.id,
+      });
+    }
+
+    const students = await query.getMany();
+    return { students };
+  }
 
   async findOne(id: string): Promise<Student> {
     const student = await this.studentRepository.findOne({
@@ -543,6 +508,11 @@ if (name) {
       throw new NotFoundException('هذا الطالب غير موجود');
     }
 
+    // ✅ التوصية: إضافة الترتيب هنا يضمن أن البيانات تكون متسقة دائمًا
+    if (student.installments && student.installments.length > 0) {
+      student.installments.sort((a, b) => a.installmentNumber - b.installmentNumber);
+    }
+
     return this.recalculateStudentFinancials(student);
   }
 
@@ -552,9 +522,7 @@ if (name) {
       relations: ['teachers', 'lessons', 'branch', 'section', 'installments'],
     });
     if (!student) {
-      throw new NotFoundException(
-        'هذا الطالب غير موجود with this phone number',
-      );
+      throw new NotFoundException('هذا الطالب غير موجود with this phone number');
     }
     return this.recalculateStudentFinancials(student);
   }
@@ -580,9 +548,22 @@ if (name) {
     return this.findOne(id);
   }
 
-  async remove(id: string): Promise<void> {
-    const student = await this.findOne(id);
-    await this.studentRepository.remove(student);
+  async remove(id: string): Promise<{ message: string }> {
+    const student = await this.studentRepository.findOne({ where: { id } });
+    if (!student) {
+      return { message: 'Student not found' };
+    }
+
+    await this.studentRepository.manager.transaction(async (manager) => {
+      await Promise.all([
+        manager.delete(this.attendanceRepository.target, { student: { id } }),
+        manager.delete(this.installmentRepository.target, { student: { id } }),
+        manager.delete(this.RevenueRepositry.target, { student: { id } }),
+      ]);
+      await manager.delete(this.studentRepository.target, id);
+    });
+
+    return { message: 'Student deleted successfully' };
   }
 
   async getStudentTeachers(id: string): Promise<Teacher[]> {

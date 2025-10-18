@@ -13,6 +13,8 @@ import {
 } from 'typeorm';
 import { Student } from 'src/user/student/student.entity';
 import { Revenue } from 'src/revenues/entities/revenues.entity';
+// 🔹 Import PaymentType to be used in paymentHistory
+import { PaymentType } from '../dto/pay-installment.dto';
 
 export enum InstallmentStatus {
   UNPAID = 'UNPAID',
@@ -62,6 +64,17 @@ export class Installment {
     default: InstallmentStatus.UNPAID,
   })
   status: InstallmentStatus;
+
+  // 🔹 ADDED: paymentHistory is now part of the Installment
+  @Column({ type: 'jsonb', default: [] })
+  paymentHistory: {
+    amount: number;
+    paidAt: Date;
+    cashReceiver: string;
+    receiptNumber: string;
+    paymentType: PaymentType;
+    throughPerson:string;
+  }[];
 
   @ManyToOne(() => Student, (student) => student.installments, {
     onDelete: 'CASCADE',

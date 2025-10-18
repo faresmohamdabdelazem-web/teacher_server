@@ -18,7 +18,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "typeorm": "ts-node --require tsconfig-paths/register ./node_modules/typeorm/cli",
+    "typeorm": "ts-node --require tsconfig-paths/register ./node_modules/typeorm/cli --dataSource src/data-source.ts",
     "typeorm:generate-migration": "npm run typeorm -- -d ./typeOrm.config.ts migration:generate ./migrations/$npm_config_name",
     "typeorm:migrate": "npm run typeorm -- -d ./typeOrm.config.ts migration:run",
     "vercel-build": "nest build"
@@ -42,7 +42,7 @@
     "cloudinary": "^2.4.0",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.6",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.6.1",
     "express": "^4.19.2",
     "google-auth-library": "^9.14.0",
     "handlebars": "^4.7.8",

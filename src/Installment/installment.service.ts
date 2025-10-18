@@ -11,51 +11,52 @@ export class InstallmentService {
     private installmentRepository: Repository<Installment>,
     @InjectRepository(Student)
     private studentRepository: Repository<Student>,
-  ) {}
+  ) { }
 
   async createInitialInstallment(student: Student): Promise<Installment> {
     const installment = this.installmentRepository.create({
       studentId: student.id,
       installmentNumber: 0,
       installmentStage: 0,
-      amount: student.remainingDownPayment,
+      // 🔹 التعديل الأساسي: القسط يتم إنشاؤه بإجمالي قيمة الدفعة المقدمة
+      amount: student.downPayment,
       monthNumber: 0,
       cashReceiver: student.cashReceiver || 'Admin',
     });
     return this.installmentRepository.save(installment);
   }
 
-async createMonthlyInstallments(student: Student): Promise<Installment[]> {
-  if (!student.id) {
-    throw new BadRequestException('Student must be saved before creating installments');
+  async createMonthlyInstallments(student: Student): Promise<Installment[]> {
+    if (!student.id) {
+      throw new BadRequestException('Student must be saved before creating installments');
+    }
+
+    const amountToBeInstalled = student.totalAmount - student.downPayment;
+    const rawMonthlyAmount = amountToBeInstalled / 12;
+
+    const decimalPart = rawMonthlyAmount % 1;
+    const monthlyAmount = decimalPart < 0.4
+      ? Math.floor(rawMonthlyAmount)
+      : Math.ceil(rawMonthlyAmount);
+
+    const installments: Installment[] = [];
+
+    for (let i = 1; i <= 12; i++) {
+      const installment = this.installmentRepository.create({
+        studentId: student.id,
+        installmentNumber: i,
+        installmentStage: i,
+        amount: monthlyAmount,
+        monthNumber: i,
+        cashReceiver: student.cashReceiver || 'Admin',
+        throughPerson: student.throughPerson || 'User'
+      });
+
+      installments.push(installment);
+    }
+
+    return this.installmentRepository.save(installments);
   }
-
-  const amountToBeInstalled = student.totalAmount - student.downPayment;
-  const rawMonthlyAmount = amountToBeInstalled / 12;
-
-  const decimalPart = rawMonthlyAmount % 1;
-  const monthlyAmount = decimalPart < 0.4
-    ? Math.floor(rawMonthlyAmount)
-    : Math.ceil(rawMonthlyAmount);
-
-  const installments: Installment[] = [];
-
-  for (let i = 1; i <= 12; i++) {
-    const installment = this.installmentRepository.create({
-      studentId: student.id, 
-      installmentNumber: i,
-      installmentStage: i,
-      amount: monthlyAmount,
-      monthNumber: i,
-      cashReceiver: student.cashReceiver || 'Admin',
-      throughPerson:student.throughPerson || 'User'
-    });
-
-    installments.push(installment);
-  }
-
-  return this.installmentRepository.save(installments);
-}
 
 
   async findAll(): Promise<Installment[]> {

@@ -15,10 +15,10 @@ import { Branch } from 'src/branch/entities/branch.entity';
 import { RevenueModule } from 'src/revenues/revenue.module';
 import { Installment } from "../../Installment/entities/installment.entity";
 import { Assistant } from '../assistant';
-
+import { Revenue } from 'src/revenues/entities/revenues.entity';
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Student, Section, Branch, Installment, LessonAttendance,Assistant]),
+    TypeOrmModule.forFeature([Student, Section, Branch, Installment, LessonAttendance,Assistant,Revenue]),
     SectionModule,
     BranchModule,
     RevenueModule,

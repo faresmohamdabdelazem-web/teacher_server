@@ -7,13 +7,19 @@ export class RevenueController {
   constructor(private readonly revenueService: RevenueService) { }
 
 
- @Get('summary')
-  getRevenueSummary(
-    @Query('branchId') branchId?: string,
-    @Query('sectionId') sectionId?: string,
-  ) {
-    return this.revenueService.getRevenueSummary(branchId,sectionId);
-  }
+@Get('summary')
+getRevenueSummary(
+  @Query('branchId') branchId?: string,
+  @Query('sectionId') sectionId?: string,
+  @Query('startDate') startDate?: string,
+  @Query('endDate') endDate?: string,
+  @Query('month') month?: string,
+  @Query('year') year?: string,
+) {
+  const monthNumber=Number(month)
+  return this.revenueService.getRevenueSummary(branchId, sectionId, startDate, endDate, monthNumber, year);
+}
+
 
 
 }
